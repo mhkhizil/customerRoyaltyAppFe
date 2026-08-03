@@ -74,7 +74,7 @@ This web app will later be wrapped as a **mobile app** ([Median.io](https://medi
 - Touch targets: minimum **44px** height for buttons and nav items on mobile.
 - Avoid hover-only interactions; ensure tap-friendly controls.
 - Test mentally at **320px**, **390px**, and **768px** widths.
-- Shell/sidebar: must collapse or stack cleanly on small screens (existing toggle pattern).
+- Shell: mobile-first with bottom nav (Home / Rewards / Profile); keep touch targets ≥ 44px.
 
 **Do not**
 

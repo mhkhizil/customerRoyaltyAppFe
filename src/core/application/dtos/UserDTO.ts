@@ -33,7 +33,7 @@ export interface UserResponseDTO {
   name: string;
   email: string;
   phone?: string;
-  role: "ADMIN" | "STAFF";
+  role: "CLIENT" | "ADMIN" | "STAFF";
   profileImageUrl?: string;
   createdDate?: string;
   updatedDate?: string;
@@ -103,13 +103,11 @@ export class UserDTOMapper {
   static toResponseDTO(user: User): UserResponseDTO {
     return {
       id: user.id,
-      name: user.name,
+      name: user.nickname || user.name,
       email: user.email,
       phone: user.phone,
       role: user.role,
       profileImageUrl: user.profileImageUrl,
-      createdDate: user.createdDate?.toISOString(),
-      updatedDate: user.updatedDate?.toISOString(),
     };
   }
 
@@ -127,11 +125,15 @@ export class UserDTOMapper {
     };
   }
 
-  static fromCreateDTO(
-    dto: CreateUserDTO
-  ): Omit<User, "id" | "createdDate" | "updatedDate"> {
+  static fromCreateDTO(dto: CreateUserDTO): {
+    nickname: string;
+    email: string;
+    phone?: string;
+    role: "ADMIN" | "STAFF";
+    profileImageUrl?: string;
+  } {
     return {
-      name: dto.name,
+      nickname: dto.name,
       email: dto.email,
       phone: dto.phone,
       role: dto.role || "STAFF",
@@ -139,10 +141,20 @@ export class UserDTOMapper {
     };
   }
 
-  static fromUpdateDTO(dto: UpdateUserDTO): Partial<User> {
-    const updateData: Partial<User> = {};
+  static fromUpdateDTO(dto: UpdateUserDTO): Partial<{
+    nickname: string;
+    email: string;
+    phone: string;
+    role: "ADMIN" | "STAFF";
+  }> {
+    const updateData: Partial<{
+      nickname: string;
+      email: string;
+      phone: string;
+      role: "ADMIN" | "STAFF";
+    }> = {};
 
-    if (dto.name !== undefined) updateData.name = dto.name;
+    if (dto.name !== undefined) updateData.nickname = dto.name;
     if (dto.email !== undefined) updateData.email = dto.email;
     if (dto.phone !== undefined) updateData.phone = dto.phone;
     if (dto.role !== undefined) updateData.role = dto.role;

@@ -1,30 +1,34 @@
 ﻿{
   "shell": {
-    "brandTitle": "App",
-    "brandSubtitle": "프론트엔드 템플릿",
-    "dashboardTitle": "대시보드",
-    "usersTitle": "사용자",
-    "customersTitle": "고객",
+    "brandTitle": "Royalty",
+    "brandSubtitle": "고객 리워드",
+    "hello": "안녕하세요, {{name}}",
+    "homeTitle": "홈",
+    "rewardsTitle": "리워드",
+    "profileTitle": "프로필",
+    "userFallback": "회원",
     "logout": "로그아웃"
   },
-  "login": {
-    "title": "로그인",
-    "subtitle": "계정 정보로 계속하세요.",
-    "submit": "로그인",
-    "submitting": "로그인 중..."
+  "home": {
+    "greeting": "나의 리워드",
+    "welcome": "환영합니다, {{name}}",
+    "subtitle": "쇼핑하고 포인트를 모아 리워드로 교환하세요.",
+    "pointsLabel": "보유 포인트",
+    "viewRewards": "리워드 보기",
+    "viewProfile": "내 프로필"
   },
-  "dashboard": {
-    "title": "대시보드",
-    "description": "시작용 홈 화면입니다. 제품 화면으로 교체하세요."
+  "rewards": {
+    "title": "리워드",
+    "subtitle": "포인트로 교환할 수 있는 혜택을 확인하세요.",
+    "emptyTitle": "곧 공개됩니다",
+    "backHome": "홈으로"
   },
-  "users": {
-    "title": "사용자"
-  },
-  "customers": {
-    "title": "고객"
+  "profile": {
+    "title": "프로필",
+    "subtitle": "로열티 계정 정보입니다."
   },
   "notFound": {
     "title": "페이지를 찾을 수 없습니다",
-    "goToDashboard": "대시보드로 이동"
+    "goHome": "홈으로 이동"
   }
 }

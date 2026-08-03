@@ -3,34 +3,28 @@ import type { User } from "@/core/domain/entities/User";
 import { useAuth } from "@/core/presentation/hooks/useAuth";
 
 /**
- * Permission skeleton for route/sidebar guards.
- * Adapt role names and permission keys to your backend contract.
+ * Customer app route permissions.
+ * All authenticated members can open home / rewards / profile.
  */
-const FULL_ACCESS_ROLE = "ROOT_ADMIN";
-
 export const PAGE_PERMISSIONS = {
-  dashboard: [] as string[],
-  users: ["MANAGE_USERS"],
-  customers: ["MANAGE_CUSTOMERS"],
+  home: [] as string[],
+  rewards: [] as string[],
+  profile: [] as string[],
 } as const;
 
 export const PERMISSION_ROUTE_ORDER = [
-  { path: "/dashboard", permissions: PAGE_PERMISSIONS.dashboard },
-  { path: "/users", permissions: PAGE_PERMISSIONS.users },
-  { path: "/customers", permissions: PAGE_PERMISSIONS.customers },
+  { path: "/home", permissions: PAGE_PERMISSIONS.home },
+  { path: "/rewards", permissions: PAGE_PERMISSIONS.rewards },
+  { path: "/profile", permissions: PAGE_PERMISSIONS.profile },
 ] as const;
 
 const normalizePermission = (value: string) => value.trim().toUpperCase();
 
-const hasFullAccess = (user: User | null) =>
-  normalizePermission(String(user?.adminRoleName || user?.role || "")) ===
-    FULL_ACCESS_ROLE ||
-  normalizePermission(String(user?.role || "")) === "ADMIN";
-
 const extractUserPermissions = (user: User | null): string[] => {
-  if (!user || !Array.isArray(user.permissions)) return [];
+  const source = user?.adminAccess?.permissions ?? user?.permissions;
+  if (!user || !Array.isArray(source)) return [];
 
-  return user.permissions
+  return source
     .filter((value): value is string => typeof value === "string")
     .map(normalizePermission)
     .filter(Boolean);
@@ -39,27 +33,23 @@ const extractUserPermissions = (user: User | null): string[] => {
 export function usePermissions() {
   const { user } = useAuth();
 
-  const isFullAccess = useMemo(() => hasFullAccess(user), [user]);
   const permissions = useMemo(() => extractUserPermissions(user), [user]);
   const resolvedRoleName = String(
-    user?.adminRoleName || user?.role || ""
+    user?.adminRoleName || user?.role || "CLIENT"
   ).trim();
 
-  const hasPermission = (requiredPermission: string) => {
-    if (isFullAccess) return true;
-    return permissions.includes(normalizePermission(requiredPermission));
-  };
+  const hasPermission = (requiredPermission: string) =>
+    permissions.includes(normalizePermission(requiredPermission));
 
   const canAccess = (requiredPermissions?: readonly string[]) => {
     if (!requiredPermissions || requiredPermissions.length === 0) return true;
-    if (isFullAccess) return true;
     return requiredPermissions.some((permission) => hasPermission(permission));
   };
 
   return {
     permissions,
     resolvedRoleName,
-    isFullAccess,
+    isFullAccess: false,
     isLoading: false,
     hasPermission,
     canAccess,

@@ -12,15 +12,11 @@ import type {
 } from "../../application/dtos/AuthDTO";
 import type { User } from "../entities/User";
 
-/**
- * Client authentication use cases.
- */
-export interface IAuthService {
+export interface IAuthRepository {
   register(payload: RegisterClientDTO): Promise<AuthActionResultDTO>;
-  login(payload: ClientLoginDTO): Promise<User>;
+  login(payload: ClientLoginDTO): Promise<{ user: User; token: string }>;
   logout(): Promise<void>;
   getCurrentUser(): Promise<User | null>;
-  isAuthenticated(): Promise<boolean>;
   forgotPassword(payload: ForgotPasswordDTO): Promise<AuthActionResultDTO>;
   resetPassword(payload: ResetPasswordDTO): Promise<AuthActionResultDTO>;
   sendPhoneOtp(payload: SendPhoneOtpDTO): Promise<AuthActionResultDTO>;

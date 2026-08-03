@@ -1,316 +1,348 @@
 import axios from "axios";
+import type {
+  ApiEnvelopeDTO,
+  AuthActionResultDTO,
+  ClientAuthUserDTO,
+  ClientLoginDTO,
+  ClientLoginResponseDTO,
+  ForgotPasswordDTO,
+  RegisterClientDTO,
+  ResetPasswordDTO,
+  SendEmailVerificationDTO,
+  SendPhoneOtpDTO,
+  UpdateDateOfBirthDTO,
+  VerifyEmailTokenDTO,
+  VerifyPhoneOtpDTO,
+} from "../../application/dtos/AuthDTO";
+import type { AdminAccess, UserRole, VerificationTag } from "../../domain/entities/User";
 import { User } from "../../domain/entities/User";
+import type { IAuthRepository } from "../../domain/repositories/IAuthRepository";
+import { isTokenExpired, tokenCookies } from "@/lib/cookies";
+import { API_CONFIG, API_ENDPOINTS } from "../api/constants";
 import { HttpClient } from "../api/HttpClient";
-import { API_ENDPOINTS, API_CONFIG } from "../api/constants";
-import { decodeJWT, isTokenExpired, tokenCookies } from "@/lib/cookies";
 
-/**
- * API response types for auth endpoints
- */
-interface LoginResponse {
-  token?: string;
-  accessToken?: string;
-  user?: RegisterResponse;
-  admin?: RegisterResponse;
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") return null;
+  return value as Record<string, unknown>;
 }
 
-interface RegisterResponse {
-  id: string;
-  name: string;
-  nickname?: string;
-  email: string;
-  phone: string;
-  role: string;
-  adminRoleId?: string;
-  adminRoleName?: string;
-  permissions?: unknown[];
-  adminRole?: {
-    id?: string;
-    name?: string;
-    permissions?: unknown[];
-  };
-  profileImageUrl?: string;
-  createdDate: string;
-  updatedDate: string;
-  createdAt?: string;
-  updatedAt?: string;
+function asString(value: unknown, fallback = ""): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  return fallback;
 }
 
-interface ApiResponse<T> {
-  message: string;
-  code: number;
-  data: T;
+function asNullableString(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string") return value;
+  return String(value);
+}
+
+function extractApiErrorMessage(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    const data = asRecord(error.response?.data);
+    const message = data?.message;
+    if (typeof message === "string" && message.trim()) {
+      return message;
+    }
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallback;
 }
 
 /**
- * Auth Repository implementation for API calls
- * Handles authentication through HTTP API
+ * Client auth API repository — implements /api/v1/client/auth/*
  */
-export class ApiAuthRepository {
-  private httpClient: HttpClient;
+export class ApiAuthRepository implements IAuthRepository {
+  constructor(private readonly httpClient: HttpClient) {}
 
-  constructor(httpClient: HttpClient) {
-    this.httpClient = httpClient;
+  async register(payload: RegisterClientDTO): Promise<AuthActionResultDTO> {
+    try {
+      const response = await this.httpClient.post<
+        ApiEnvelopeDTO<AuthActionResultDTO>
+      >(API_ENDPOINTS.AUTH.REGISTER, payload);
+      return this.parseActionResult(response.data);
+    } catch (error: unknown) {
+      throw new Error(extractApiErrorMessage(error, "Registration failed"));
+    }
   }
 
-  /**
-   * Login user with email and password
-   */
   async login(
-    identifier: string,
-    password: string
+    payload: ClientLoginDTO
   ): Promise<{ user: User; token: string }> {
     try {
       this.clearPersistedAuthenticatedSession();
-      const loginPayload = this.buildLoginPayload(identifier, password);
 
-      const response = await this.httpClient.post<ApiResponse<LoginResponse>>(
-        API_ENDPOINTS.AUTH.LOGIN,
-        loginPayload
-      );
+      const response = await this.httpClient.post<
+        ApiEnvelopeDTO<ClientLoginResponseDTO>
+      >(API_ENDPOINTS.AUTH.LOGIN, payload);
 
-      const token = this.extractToken(response);
+      const data = this.unwrapData(response.data);
+      const token = asString(asRecord(data.tokens)?.accessToken);
       if (!token) {
         throw new Error("Login response did not include a token");
       }
 
-      const responseUser = this.extractUser(response, identifier, token);
-      if (!responseUser) {
+      const userDto = asRecord(data.user) as ClientAuthUserDTO | null;
+      if (!userDto?.id) {
         throw new Error("Login response did not include a user");
       }
 
-      const user = this.mapApiResponseToUser(responseUser);
-
+      const user = this.mapClientUserToEntity(userDto);
       this.persistAuthenticatedSession(token, user);
-
       return { user, token };
     } catch (error: unknown) {
-      console.error("Error during login:", error);
-
-      if (axios.isAxiosError(error)) {
-        const msg = error.response?.data?.message;
-        if (msg) throw new Error(String(msg));
-      }
-      if (error instanceof Error) {
-        throw new Error(error.message);
-      }
-      throw new Error("Invalid credentials");
+      throw new Error(extractApiErrorMessage(error, "Invalid credentials"));
     }
   }
 
-  private buildLoginPayload(
-    identifier: string,
-    password: string
-  ): Record<string, string> {
-    if (identifier.includes("@")) {
-      return { email: identifier, password };
-    }
-
-    return { phone: identifier, password };
-  }
-
-  private persistAuthenticatedSession(token: string, user: User): void {
-    sessionStorage.setItem("wms_token", token);
-    sessionStorage.setItem("wms_user", JSON.stringify(user));
-
-    // Keep existing tokenCookies integration so the current app auth restore
-    // flow continues to work without wider repository changes.
-    tokenCookies.setToken(token);
-    tokenCookies.setUser(JSON.stringify(user));
-  }
-
-  private clearPersistedAuthenticatedSession(): void {
-    sessionStorage.removeItem("wms_token");
-    sessionStorage.removeItem("wms_user");
-    tokenCookies.clearAll();
-  }
-
-  /**
-   * Logout user
-   */
   async logout(): Promise<void> {
     try {
-      // Clear CSRF token
       this.httpClient.clearCsrfToken();
-
-      // Clear stored data from all client-side auth storage
       this.clearPersistedAuthenticatedSession();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error during logout:", error);
     }
   }
 
-  /**
-   * Get current user from secure cookie
-   */
   async getCurrentUser(): Promise<User | null> {
     try {
       const token = tokenCookies.getToken();
-      const userJson = tokenCookies.getUser();
-      if (!token || !userJson) {
-        tokenCookies.clearAll();
+      if (!token || isTokenExpired(token)) {
+        this.clearPersistedAuthenticatedSession();
         return null;
       }
 
-      if (isTokenExpired(token)) {
-        tokenCookies.clearAll();
-        return null;
+      try {
+        const response = await this.httpClient.get<
+          ApiEnvelopeDTO<ClientAuthUserDTO>
+        >(API_ENDPOINTS.AUTH.ME);
+        const userDto = this.unwrapData(response.data);
+        const user = this.mapClientUserToEntity(userDto);
+        tokenCookies.setUser(JSON.stringify(user));
+        return user;
+      } catch {
+        // Offline / network failure: fall back to cached session user
+        const userJson = tokenCookies.getUser();
+        if (!userJson) {
+          this.clearPersistedAuthenticatedSession();
+          return null;
+        }
+        const cached = JSON.parse(userJson) as ClientAuthUserDTO;
+        return this.mapClientUserToEntity(cached);
       }
-
-      const userData = JSON.parse(userJson);
-      const user = this.mapApiResponseToUser(userData);
-
-      return user;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error getting current user:", error);
       return null;
     }
   }
 
-  /**
-   * Map API response to User entity
-   */
-  private mapApiResponseToUser(apiUser: RegisterResponse): User {
-    const normalizedRole = this.normalizeRole(apiUser.role);
-    const rolePermissions = this.normalizePermissions(
-      apiUser.permissions ??
-        apiUser.adminRole?.permissions ??
-        []
-    );
+  async forgotPassword(
+    payload: ForgotPasswordDTO
+  ): Promise<AuthActionResultDTO> {
+    try {
+      const response = await this.httpClient.post<
+        ApiEnvelopeDTO<AuthActionResultDTO>
+      >(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, payload);
+      return this.parseActionResult(response.data);
+    } catch (error: unknown) {
+      throw new Error(
+        extractApiErrorMessage(error, "Unable to send password reset code")
+      );
+    }
+  }
+
+  async resetPassword(payload: ResetPasswordDTO): Promise<AuthActionResultDTO> {
+    try {
+      const response = await this.httpClient.post<
+        ApiEnvelopeDTO<AuthActionResultDTO>
+      >(API_ENDPOINTS.AUTH.RESET_PASSWORD, payload);
+      return this.parseActionResult(response.data);
+    } catch (error: unknown) {
+      throw new Error(extractApiErrorMessage(error, "Unable to reset password"));
+    }
+  }
+
+  async sendPhoneOtp(payload: SendPhoneOtpDTO): Promise<AuthActionResultDTO> {
+    try {
+      const response = await this.httpClient.post<
+        ApiEnvelopeDTO<AuthActionResultDTO>
+      >(API_ENDPOINTS.AUTH.OTP_SEND, payload);
+      return this.parseActionResult(response.data);
+    } catch (error: unknown) {
+      throw new Error(extractApiErrorMessage(error, "Unable to send OTP"));
+    }
+  }
+
+  async verifyPhoneOtp(
+    payload: VerifyPhoneOtpDTO
+  ): Promise<AuthActionResultDTO> {
+    try {
+      const response = await this.httpClient.post<
+        ApiEnvelopeDTO<AuthActionResultDTO>
+      >(API_ENDPOINTS.AUTH.OTP_VERIFY, payload);
+      return this.parseActionResult(response.data);
+    } catch (error: unknown) {
+      throw new Error(extractApiErrorMessage(error, "Unable to verify OTP"));
+    }
+  }
+
+  async sendEmailVerification(
+    payload: SendEmailVerificationDTO
+  ): Promise<AuthActionResultDTO> {
+    try {
+      const response = await this.httpClient.post<
+        ApiEnvelopeDTO<AuthActionResultDTO>
+      >(API_ENDPOINTS.AUTH.EMAIL_SEND_VERIFICATION, payload);
+      return this.parseActionResult(response.data);
+    } catch (error: unknown) {
+      throw new Error(
+        extractApiErrorMessage(error, "Unable to send email verification")
+      );
+    }
+  }
+
+  async verifyEmailToken(
+    payload: VerifyEmailTokenDTO
+  ): Promise<AuthActionResultDTO> {
+    try {
+      const response = await this.httpClient.post<
+        ApiEnvelopeDTO<AuthActionResultDTO>
+      >(API_ENDPOINTS.AUTH.EMAIL_VERIFY, payload);
+      return this.parseActionResult(response.data);
+    } catch (error: unknown) {
+      throw new Error(extractApiErrorMessage(error, "Unable to verify email"));
+    }
+  }
+
+  async updateDateOfBirth(payload: UpdateDateOfBirthDTO): Promise<User> {
+    try {
+      const response = await this.httpClient.patch<
+        ApiEnvelopeDTO<{ id: string; dateOfBirth: string }>
+      >(API_ENDPOINTS.AUTH.UPDATE_DATE_OF_BIRTH, payload);
+
+      const updated = this.unwrapData(response.data);
+      const current = await this.getCurrentUser();
+      if (!current) {
+        throw new Error("Not authenticated");
+      }
+
+      const nextUser = new User({
+        ...current,
+        dateOfBirth: asNullableString(updated.dateOfBirth),
+      });
+      tokenCookies.setUser(JSON.stringify(nextUser));
+      return nextUser;
+    } catch (error: unknown) {
+      throw new Error(
+        extractApiErrorMessage(error, "Unable to update date of birth")
+      );
+    }
+  }
+
+  private unwrapData<T>(envelope: ApiEnvelopeDTO<T> | T): T {
+    const record = asRecord(envelope);
+    if (record && "data" in record) {
+      return record.data as T;
+    }
+    return envelope as T;
+  }
+
+  private parseActionResult(
+    envelope: ApiEnvelopeDTO<AuthActionResultDTO> | AuthActionResultDTO
+  ): AuthActionResultDTO {
+    const data = this.unwrapData(envelope);
+    const record = asRecord(data);
+    const action = asString(record?.action);
+    return {
+      success: Boolean(record?.success ?? true),
+      action: action || undefined,
+    };
+  }
+
+  private mapClientUserToEntity(apiUser: ClientAuthUserDTO): User {
+    const adminAccess = this.mapAdminAccess(apiUser.adminAccess);
+    const role: UserRole = adminAccess ? "ADMIN" : "CLIENT";
 
     return new User({
-      id: String(apiUser.id),
-      name: apiUser.name || apiUser.nickname || "",
-      nickname: apiUser.nickname || apiUser.name || "",
-      email: apiUser.email || "",
-      phone: apiUser.phone,
-      role: normalizedRole,
-      adminRoleId: apiUser.adminRoleId || apiUser.adminRole?.id,
-      adminRoleName: apiUser.adminRoleName || apiUser.adminRole?.name,
-      permissions: rolePermissions,
-      profileImageUrl: this.convertToFullUrl(apiUser.profileImageUrl),
-      createdDate: new Date(apiUser.createdDate || apiUser.createdAt || Date.now()),
-      updatedDate: new Date(apiUser.updatedDate || apiUser.updatedAt || Date.now()),
+      id: asString(apiUser.id),
+      nickname: asString(apiUser.nickname),
+      email: asString(apiUser.email),
+      phone: asString(apiUser.phone),
+      avatar: asNullableString(apiUser.avatar),
+      isPhoneVerified: Boolean(apiUser.isPhoneVerified),
+      isEmailVerified: Boolean(apiUser.isEmailVerified),
+      phoneVerifiedAt: asNullableString(apiUser.phoneVerifiedAt),
+      emailVerifiedAt: asNullableString(apiUser.emailVerifiedAt),
+      dateOfBirth: asNullableString(apiUser.dateOfBirth),
+      referralCode: asNullableString(apiUser.referralCode),
+      adminAccess,
+      verificationTags: this.mapVerificationTags(apiUser.verificationTags),
+      role,
+      adminRoleName: adminAccess?.role,
+      permissions: adminAccess?.permissions ?? [],
+      profileImageUrl: this.convertToFullUrl(
+        asNullableString(apiUser.avatar) ?? undefined
+      ),
     });
   }
 
-  /**
-   * Convert relative URL to full URL
-   */
+  private mapAdminAccess(
+    value: ClientAuthUserDTO["adminAccess"]
+  ): AdminAccess | null {
+    if (!value || typeof value !== "object") return null;
+    const role = asString(value.role);
+    if (!role) return null;
+
+    const permissions = Array.isArray(value.permissions)
+      ? value.permissions
+          .filter((entry): entry is string => typeof entry === "string")
+          .map((entry) => entry.trim())
+          .filter(Boolean)
+      : [];
+
+    return {
+      role,
+      isRootAdmin: Boolean(value.isRootAdmin),
+      permissions,
+    };
+  }
+
+  private mapVerificationTags(
+    tags: ClientAuthUserDTO["verificationTags"]
+  ): VerificationTag[] {
+    if (!Array.isArray(tags)) return [];
+
+    return tags.map((tag) => ({
+      type: asString(tag?.type, "UNKNOWN"),
+      label: asString(tag?.label),
+      value: asNullableString(tag?.value),
+      status: asString(tag?.status, "UNVERIFIED"),
+      isVerified: Boolean(tag?.isVerified),
+      canVerifyFromProfile: Boolean(tag?.canVerifyFromProfile),
+      action: asNullableString(tag?.action),
+      verifiedAt: asNullableString(tag?.verifiedAt),
+    }));
+  }
+
   private convertToFullUrl(url?: string): string | undefined {
-    if (!url) {
-      return undefined;
-    }
+    if (!url) return undefined;
     if (url.startsWith("http://") || url.startsWith("https://")) {
       return url;
     }
     return `${API_CONFIG.BASE_URL}${url}`;
   }
 
-  private extractToken(response: unknown): string | null {
-    if (!response || typeof response !== "object") return null;
-    const root = response as Record<string, unknown>;
-    const data =
-      root.data && typeof root.data === "object"
-        ? (root.data as Record<string, unknown>)
-        : null;
-    const nestedTokens =
-      data?.tokens && typeof data.tokens === "object"
-        ? (data.tokens as Record<string, unknown>)
-        : null;
-
-    const candidates = [
-      root.token,
-      root.accessToken,
-      data?.token,
-      data?.accessToken,
-      data?.jwt,
-      nestedTokens?.accessToken,
-      nestedTokens?.token,
-    ];
-
-    for (const candidate of candidates) {
-      if (typeof candidate === "string" && candidate.trim()) {
-        return candidate;
-      }
-    }
-    return null;
+  private persistAuthenticatedSession(token: string, user: User): void {
+    tokenCookies.setToken(token);
+    tokenCookies.setUser(JSON.stringify(user));
   }
 
-  private extractUser(
-    response: unknown,
-    identifier?: string,
-    token?: string
-  ): RegisterResponse | null {
-    if (!response || typeof response !== "object") return null;
-    const root = response as Record<string, unknown>;
-    const data =
-      root.data && typeof root.data === "object"
-        ? (root.data as Record<string, unknown>)
-        : null;
-    const nestedData =
-      data?.data && typeof data.data === "object"
-        ? (data.data as Record<string, unknown>)
-        : null;
-
-    const candidates = [
-      nestedData?.user,
-      nestedData?.admin,
-      data?.user,
-      data?.admin,
-      root.user,
-      root.admin,
-    ].filter(
-      (candidate): candidate is Record<string, unknown> =>
-        !!candidate && typeof candidate === "object"
-    );
-
-    if (candidates.length === 0) return null;
-
-    const normalizedIdentifier = String(identifier || "").trim().toLowerCase();
-    const tokenPayload = token ? decodeJWT(token) : null;
-    const tokenEmail = String(tokenPayload?.email || "").trim().toLowerCase();
-    const tokenUserId = String(tokenPayload?.sub || "").trim();
-
-    const matchedCandidate = candidates.find((candidate) => {
-      const candidateEmail = String(candidate.email || "").trim().toLowerCase();
-      const candidatePhone = String(candidate.phone || "").trim().toLowerCase();
-      const candidateId = String(candidate.id || "").trim();
-
-      return (
-        (!!normalizedIdentifier &&
-          (candidateEmail === normalizedIdentifier ||
-            candidatePhone === normalizedIdentifier)) ||
-        (!!tokenEmail && candidateEmail === tokenEmail) ||
-        (!!tokenUserId && candidateId === tokenUserId)
-      );
-    });
-
-    return (matchedCandidate || candidates[0]) as unknown as RegisterResponse;
-  }
-
-  private normalizeRole(rawRole: unknown): "ADMIN" | "STAFF" {
-    const value = String(rawRole || "").trim().toUpperCase();
-    return value === "ADMIN" ? "ADMIN" : "STAFF";
-  }
-
-  private normalizePermissions(rawPermissions: unknown[]): string[] {
-    if (!Array.isArray(rawPermissions)) return [];
-
-    return rawPermissions
-      .map((entry) => {
-        if (typeof entry === "string") return entry.trim();
-        if (entry && typeof entry === "object") {
-          const permission = entry as Record<string, unknown>;
-          return String(
-            permission.key ||
-              permission.name ||
-              permission.id ||
-              ""
-          ).trim();
-        }
-        return "";
-      })
-      .filter(Boolean);
+  private clearPersistedAuthenticatedSession(): void {
+    tokenCookies.clearAll();
   }
 }

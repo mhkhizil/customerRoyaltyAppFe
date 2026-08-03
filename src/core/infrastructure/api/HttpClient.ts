@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
-import { API_CONFIG, API_ENDPOINTS } from "./constants";
+import { API_CONFIG, API_ENDPOINTS, PUBLIC_AUTH_PATHS } from "./constants";
 import {
   tokenCookies,
   isTokenExpired,
@@ -73,8 +73,8 @@ export class HttpClient {
           return config;
         }
 
-        // Skip CSRF for login endpoint
-        if (config.url === API_ENDPOINTS.AUTH.LOGIN) {
+        // Skip CSRF for public client auth endpoints
+        if (config.url && PUBLIC_AUTH_PATHS.includes(config.url)) {
           return config;
         }
 

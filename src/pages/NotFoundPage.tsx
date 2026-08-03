@@ -13,8 +13,8 @@ export function NotFoundPage() {
       <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
         {t("notFound.description")}
       </p>
-      <Link className="mt-6" to="/dashboard">
-        <Button variant="secondary">{t("notFound.goToDashboard")}</Button>
+      <Link className="mt-6" to="/home">
+        <Button variant="secondary">{t("notFound.goHome")}</Button>
       </Link>
     </section>
   );

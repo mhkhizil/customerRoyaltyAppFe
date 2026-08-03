@@ -13,6 +13,7 @@ vi.mock("react-i18next", () => ({
 vi.mock("@/core/presentation/hooks/useAuth", () => ({
   useAuth: () => ({
     login: vi.fn(),
+    clearError: vi.fn(),
     user: null,
     isAuthenticated: false,
     isLoading: false,
@@ -28,8 +29,14 @@ describe("LoginPage", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByLabelText("login.identifierLabel")).toBeInTheDocument();
-    expect(screen.getByLabelText("login.passwordLabel")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "login.submit" })).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("auth.login.identifierLabel")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("auth.login.passwordLabel")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "auth.login.submit" })
+    ).toBeInTheDocument();
   });
 });

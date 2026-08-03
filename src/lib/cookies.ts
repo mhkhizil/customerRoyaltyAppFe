@@ -19,8 +19,10 @@ interface CookieOptions {
  */
 interface JWTPayload {
   sub: string; // Subject (user ID)
-  email: string;
-  role: string;
+  phone?: string;
+  email?: string;
+  role?: string;
+  authTokenVersion?: number;
   iat: number; // Issued at
   exp: number; // Expires at
 }

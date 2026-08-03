@@ -61,9 +61,9 @@ Work inside-out:
 
 Starter examples:
 
-- Auth (`useAuth`)
-- Users (`useUserManagement`)
-- Customers (`useCustomerManagement`)
+- Auth (`useAuth`) — client register/login/OTP/profile
+- Home / Rewards / Profile — customer loyalty shell
+- Customer CRUD layers (`useCustomerManagement`) remain as an architecture sample only
 
 ## Theme rules
 

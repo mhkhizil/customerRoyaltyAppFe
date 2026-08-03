@@ -1,69 +1,105 @@
+export type UserRole = "CLIENT" | "ADMIN" | "STAFF";
+
+export type VerificationTagType = "PHONE" | "EMAIL" | string;
+
+export type VerificationTagStatus = "VERIFIED" | "PENDING" | "UNVERIFIED" | string;
+
+export type VerificationTag = {
+  type: VerificationTagType;
+  label: string;
+  value?: string | null;
+  status: VerificationTagStatus;
+  isVerified: boolean;
+  canVerifyFromProfile: boolean;
+  action?: string | null;
+  verifiedAt?: string | null;
+};
+
+export type AdminAccess = {
+  role: string;
+  isRootAdmin: boolean;
+  permissions: string[];
+};
+
 /**
- * User entity representing the core domain model for users in the system
- * This is independent of any framework or external concern
+ * Authenticated client/user domain model.
+ * Matches GET /api/v1/client/auth/me and login user payload.
  */
 export class User {
   id!: string;
-  name!: string;
+  nickname!: string;
   email!: string;
-  phone?: string;
-  role!: "ADMIN" | "STAFF";
-  nickname?: string;
-  adminRoleId?: string;
+  phone!: string;
+  avatar?: string | null;
+  isPhoneVerified!: boolean;
+  isEmailVerified!: boolean;
+  phoneVerifiedAt?: string | null;
+  emailVerifiedAt?: string | null;
+  dateOfBirth?: string | null;
+  referralCode?: string | null;
+  adminAccess?: AdminAccess | null;
+  verificationTags!: VerificationTag[];
+  role!: UserRole;
+  /** Convenience mirrors from adminAccess for permission helpers */
   adminRoleName?: string;
   permissions?: string[];
   profileImageUrl?: string;
-  createdDate?: Date;
-  updatedDate?: Date;
 
-  // Index signature to allow access to properties by string key
   [key: string]: unknown;
 
   constructor(data: {
     id: string;
-    name: string;
+    nickname: string;
     email: string;
-    phone?: string;
-    role: "ADMIN" | "STAFF";
-    nickname?: string;
-    adminRoleId?: string;
+    phone: string;
+    avatar?: string | null;
+    isPhoneVerified?: boolean;
+    isEmailVerified?: boolean;
+    phoneVerifiedAt?: string | null;
+    emailVerifiedAt?: string | null;
+    dateOfBirth?: string | null;
+    referralCode?: string | null;
+    adminAccess?: AdminAccess | null;
+    verificationTags?: VerificationTag[];
+    role?: UserRole;
     adminRoleName?: string;
     permissions?: string[];
     profileImageUrl?: string;
-    createdDate?: Date;
-    updatedDate?: Date;
   }) {
-    Object.assign(this, data);
+    this.id = data.id;
+    this.nickname = data.nickname;
+    this.email = data.email;
+    this.phone = data.phone;
+    this.avatar = data.avatar ?? null;
+    this.isPhoneVerified = data.isPhoneVerified ?? false;
+    this.isEmailVerified = data.isEmailVerified ?? false;
+    this.phoneVerifiedAt = data.phoneVerifiedAt ?? null;
+    this.emailVerifiedAt = data.emailVerifiedAt ?? null;
+    this.dateOfBirth = data.dateOfBirth ?? null;
+    this.referralCode = data.referralCode ?? null;
+    this.adminAccess = data.adminAccess ?? null;
+    this.verificationTags = data.verificationTags ?? [];
+    this.role = data.role ?? (data.adminAccess ? "ADMIN" : "CLIENT");
+    this.adminRoleName = data.adminRoleName ?? data.adminAccess?.role;
+    this.permissions =
+      data.permissions ?? data.adminAccess?.permissions ?? [];
+    this.profileImageUrl = data.profileImageUrl ?? data.avatar ?? undefined;
   }
 
-  /**
-   * Validates that the user entity contains valid data
-   */
+  /** Display name used across the shell */
+  get name(): string {
+    return this.nickname || this.email || this.phone || "";
+  }
+
   isValid(): boolean {
-    // Basic email regex pattern for domain entity validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    return (
-      !!this.id &&
-      !!this.name &&
-      !!this.email &&
-      emailRegex.test(this.email) &&
-      !!this.role &&
-      ["ADMIN", "STAFF"].includes(this.role)
-    );
+    return !!this.id && (!!this.email || !!this.phone);
   }
 
-  /**
-   * Check if user has admin role
-   */
   isAdmin(): boolean {
-    return this.role === "ADMIN";
+    return this.role === "ADMIN" || !!this.adminAccess;
   }
 
-  /**
-   * Check if user has staff role
-   */
-  isStaff(): boolean {
-    return this.role === "STAFF";
+  isClient(): boolean {
+    return this.role === "CLIENT" && !this.adminAccess;
   }
 }

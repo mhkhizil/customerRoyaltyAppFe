@@ -326,13 +326,12 @@ export class ApiUserRepository implements IUserRepository {
   private mapApiResponseToUser(apiUser: ApiUserResponse): User {
     return new User({
       id: apiUser.id,
-      name: apiUser.name,
+      nickname: apiUser.name,
       email: apiUser.email,
       phone: apiUser.phone,
-      role: apiUser.role as "ADMIN" | "STAFF",
+      role: apiUser.role,
       profileImageUrl: this.convertToFullUrl(apiUser.profileImageUrl),
-      createdDate: new Date(apiUser.createdDate),
-      updatedDate: new Date(apiUser.updatedDate),
+      avatar: this.convertToFullUrl(apiUser.profileImageUrl),
     });
   }
 

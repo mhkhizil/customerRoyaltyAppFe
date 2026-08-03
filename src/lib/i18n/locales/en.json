@@ -24,83 +24,142 @@
     "offlineBadge": "Offline"
   },
   "shell": {
-    "brandTitle": "App",
-    "brandSubtitle": "Frontend template",
-    "mainMenu": "Main menu",
-    "workspace": "Workspace",
-    "workspaceTitle": "Getting started",
-    "workspaceText": "Use Users and Customers as architecture examples, then replace them with your features.",
-    "appVersion": "v{{version}}",
-    "dashboardTitle": "Dashboard",
-    "dashboardMeta": "Overview",
-    "usersTitle": "Users",
-    "usersMeta": "Example list",
-    "customersTitle": "Customers",
-    "customersMeta": "Example CRUD",
-    "topbarTitle": "Workspace",
-    "topbarSubtitle": "Authenticated app shell",
-    "signedInAs": "Signed in as",
-    "fullAccessRole": "Full access",
-    "userRole": "User",
-    "userFallback": "User",
+    "brandTitle": "Royalty",
+    "brandSubtitle": "Customer rewards",
+    "hello": "Hi, {{name}}",
+    "homeTitle": "Home",
+    "rewardsTitle": "Rewards",
+    "profileTitle": "Profile",
+    "userFallback": "Member",
     "logout": "Log out"
   },
-  "login": {
-    "title": "Sign in",
-    "subtitle": "Use your account credentials to continue.",
-    "identifierLabel": "Email or username",
-    "identifierPlaceholder": "you@example.com",
-    "passwordLabel": "Password",
-    "passwordPlaceholder": "Enter password",
-    "showPassword": "Show password",
-    "hidePassword": "Hide password",
-    "submit": "Sign in",
-    "submitting": "Signing in...",
-    "errorFallback": "Unable to sign in"
-  },
-  "dashboard": {
-    "title": "Dashboard",
-    "description": "Neutral starter home. Replace this page with your product overview.",
-    "usersCard": "Users",
-    "customersCard": "Customers",
-    "exampleValue": "—",
-    "usersHint": "Example resource via useUserManagement",
-    "customersHint": "Example resource via useCustomerManagement",
-    "nextStepsTitle": "Next steps",
-    "nextStepsText": "Explore the example pages, then add your own feature using architecture.md.",
-    "openUsers": "Open users",
-    "openCustomers": "Open customers"
-  },
-  "users": {
-    "title": "Users",
-    "description": "Thin example list page wired through core layers.",
-    "loading": "Loading users...",
-    "empty": "No users found. Point USERS endpoints at your backend to populate this list.",
-    "total": "{{count}} users",
-    "columns": {
-      "name": "Name",
-      "email": "Email",
-      "role": "Role"
-    }
-  },
-  "customers": {
-    "title": "Customers",
-    "description": "Example CRUD resource. Copy this pattern for new features.",
-    "createTitle": "Create customer",
-    "createSubmit": "Create",
-    "createError": "Unable to create customer",
-    "loading": "Loading customers...",
-    "empty": "No customers yet. Create one above or connect your API.",
-    "total": "{{count}} customers",
-    "fields": {
-      "name": "Name",
-      "email": "Email",
-      "phone": "Phone",
-      "address": "Address"
+  "auth": {
+    "common": {
+      "showPassword": "Show",
+      "hidePassword": "Hide",
+      "backToLogin": "Back to sign in"
     },
-    "columns": {
-      "actions": "Actions"
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Use your phone or email and password.",
+      "identifierLabel": "Phone or email",
+      "identifierPlaceholder": "+959… or you@example.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter password",
+      "submit": "Sign in",
+      "submitting": "Signing in...",
+      "missingFields": "Phone/email and password are required",
+      "errorFallback": "Unable to sign in",
+      "noAccount": "New here?",
+      "registerLink": "Create an account",
+      "forgotPasswordLink": "Forgot password?"
+    },
+    "register": {
+      "title": "Create account",
+      "subtitle": "Register with phone and email. OTP verification starts next.",
+      "nicknamePlaceholder": "Nickname",
+      "phonePlaceholder": "Phone (+959…)",
+      "emailPlaceholder": "Email",
+      "passwordPlaceholder": "Password",
+      "confirmPasswordPlaceholder": "Confirm password",
+      "passwordMismatch": "Passwords do not match",
+      "submit": "Register",
+      "submitting": "Creating account...",
+      "errorFallback": "Unable to register",
+      "hasAccount": "Already have an account?",
+      "loginLink": "Sign in"
+    },
+    "forgotPassword": {
+      "title": "Forgot password",
+      "subtitle": "We will send a 6-digit reset code to your phone or email.",
+      "identifierPlaceholder": "Phone or email",
+      "missingIdentifier": "Phone or email is required",
+      "submit": "Send reset code",
+      "submitting": "Sending...",
+      "errorFallback": "Unable to send reset code"
+    },
+    "resetPassword": {
+      "title": "Reset password",
+      "subtitle": "Enter the code you received and choose a new password.",
+      "identifierPlaceholder": "Phone or email",
+      "codePlaceholder": "6-digit code",
+      "newPasswordPlaceholder": "New password",
+      "confirmPasswordPlaceholder": "Confirm new password",
+      "missingIdentifier": "Phone or email is required",
+      "passwordMismatch": "Passwords do not match",
+      "submit": "Reset password",
+      "submitting": "Resetting...",
+      "success": "Password updated. Redirecting to sign in…",
+      "errorFallback": "Unable to reset password"
+    },
+    "verifyPhone": {
+      "title": "Verify phone",
+      "subtitle": "Enter the SMS OTP sent to your phone.",
+      "phonePlaceholder": "Phone (+959…)",
+      "codePlaceholder": "6-digit OTP",
+      "sendOtp": "Send OTP",
+      "verify": "Verify phone",
+      "otpSent": "OTP sent. Check your SMS.",
+      "success": "Phone verified",
+      "sendError": "Unable to send OTP",
+      "verifyError": "Unable to verify OTP",
+      "skipToEmail": "Verify email instead"
+    },
+    "verifyEmail": {
+      "title": "Verify email",
+      "subtitle": "Enter the verification token from your email.",
+      "emailPlaceholder": "Email",
+      "tokenPlaceholder": "Email verification token",
+      "sendToken": "Send token",
+      "verify": "Verify email",
+      "tokenSent": "Verification email sent.",
+      "success": "Email verified. Redirecting to sign in…",
+      "sendError": "Unable to send verification email",
+      "verifyError": "Unable to verify email"
     }
+  },
+  "home": {
+    "greeting": "Your rewards",
+    "welcome": "Welcome, {{name}}",
+    "subtitle": "Earn points when you shop. Redeem them for rewards.",
+    "pointsLabel": "Available points",
+    "pointsPlaceholder": "—",
+    "pointsHint": "Points balance will appear here once the API is connected.",
+    "viewRewards": "View rewards",
+    "viewProfile": "My profile",
+    "phoneStatus": "Phone",
+    "emailStatus": "Email",
+    "verified": "Verified",
+    "unverified": "Not verified",
+    "verifyNow": "Verify now",
+    "howItWorksTitle": "How it works",
+    "howItWorksStep1": "1. Shop at the store and earn points on purchases.",
+    "howItWorksStep2": "2. Check your balance and browse rewards here.",
+    "howItWorksStep3": "3. Redeem points for offers and perks."
+  },
+  "rewards": {
+    "title": "Rewards",
+    "subtitle": "Browse offers you can redeem with your points.",
+    "emptyTitle": "Rewards coming soon",
+    "emptyText": "Connect the rewards catalog API to show redeemable offers here.",
+    "backHome": "Back to home"
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Your loyalty account details.",
+    "nickname": "Nickname",
+    "phone": "Phone",
+    "email": "Email",
+    "referralCode": "Referral code",
+    "verifyPhone": "Verify phone",
+    "verifyEmail": "Verify email",
+    "phoneVerified": "Phone verified",
+    "emailVerified": "Email verified",
+    "dobTitle": "Date of birth",
+    "dobHint": "Used for birthday rewards when available.",
+    "saveDob": "Save date of birth",
+    "dobSaved": "Date of birth updated",
+    "dobError": "Unable to update date of birth"
   },
   "router": {
     "accessDeniedTitle": "Access denied",
@@ -109,6 +168,6 @@
   "notFound": {
     "title": "Page not found",
     "description": "That route does not exist.",
-    "goToDashboard": "Go to dashboard"
+    "goHome": "Go to home"
   }
 }

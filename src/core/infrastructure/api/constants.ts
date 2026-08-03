@@ -3,14 +3,22 @@ export const API_CONFIG = {
 } as const;
 
 /**
- * Template endpoint map.
- * Replace paths with your backend contract when starting a new project.
+ * API endpoint map for Customer Royalty App.
  */
 export const API_ENDPOINTS = {
   ROOT: "/",
 
   AUTH: {
-    LOGIN: "/api/v1/auth/login",
+    REGISTER: "/api/v1/client/auth/register",
+    LOGIN: "/api/v1/client/auth/login",
+    FORGOT_PASSWORD: "/api/v1/client/auth/forgot-password",
+    RESET_PASSWORD: "/api/v1/client/auth/reset-password",
+    OTP_SEND: "/api/v1/client/auth/otp/send",
+    OTP_VERIFY: "/api/v1/client/auth/otp/verify",
+    EMAIL_SEND_VERIFICATION: "/api/v1/client/auth/email/send-verification",
+    EMAIL_VERIFY: "/api/v1/client/auth/email/verify",
+    ME: "/api/v1/client/auth/me",
+    UPDATE_DATE_OF_BIRTH: "/api/v1/client/auth/me/date-of-birth",
   },
 
   USERS: {
@@ -24,7 +32,6 @@ export const API_ENDPOINTS = {
     DELETE: (id: string) => `/api/v1/users/${id}`,
   },
 
-  // Example resource — copy this pattern for new features
   CUSTOMERS: {
     BASE: "/api/v1/customers",
     CREATE: "/api/v1/customers",
@@ -41,6 +48,18 @@ export const API_ENDPOINTS = {
     TOKEN: "/csrf/token",
   },
 } as const;
+
+/** Public auth routes that must skip CSRF bootstrap. */
+export const PUBLIC_AUTH_PATHS: readonly string[] = [
+  API_ENDPOINTS.AUTH.REGISTER,
+  API_ENDPOINTS.AUTH.LOGIN,
+  API_ENDPOINTS.AUTH.FORGOT_PASSWORD,
+  API_ENDPOINTS.AUTH.RESET_PASSWORD,
+  API_ENDPOINTS.AUTH.OTP_SEND,
+  API_ENDPOINTS.AUTH.OTP_VERIFY,
+  API_ENDPOINTS.AUTH.EMAIL_SEND_VERIFICATION,
+  API_ENDPOINTS.AUTH.EMAIL_VERIFY,
+];
 
 export const HTTP_METHODS = {
   GET: "GET",

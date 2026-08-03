@@ -21,19 +21,44 @@ const LoginPage = lazy(() =>
     default: module.LoginPage,
   }))
 );
-const DashboardPage = lazy(() =>
-  import("../../pages/DashboardPage").then((module) => ({
-    default: module.DashboardPage,
+const RegisterPage = lazy(() =>
+  import("../../pages/RegisterPage").then((module) => ({
+    default: module.RegisterPage,
   }))
 );
-const UsersPage = lazy(() =>
-  import("../../pages/UsersPage").then((module) => ({
-    default: module.UsersPage,
+const ForgotPasswordPage = lazy(() =>
+  import("../../pages/ForgotPasswordPage").then((module) => ({
+    default: module.ForgotPasswordPage,
   }))
 );
-const CustomersPage = lazy(() =>
-  import("../../pages/CustomersPage").then((module) => ({
-    default: module.CustomersPage,
+const ResetPasswordPage = lazy(() =>
+  import("../../pages/ResetPasswordPage").then((module) => ({
+    default: module.ResetPasswordPage,
+  }))
+);
+const VerifyPhonePage = lazy(() =>
+  import("../../pages/VerifyPhonePage").then((module) => ({
+    default: module.VerifyPhonePage,
+  }))
+);
+const VerifyEmailPage = lazy(() =>
+  import("../../pages/VerifyEmailPage").then((module) => ({
+    default: module.VerifyEmailPage,
+  }))
+);
+const HomePage = lazy(() =>
+  import("../../pages/HomePage").then((module) => ({
+    default: module.HomePage,
+  }))
+);
+const RewardsPage = lazy(() =>
+  import("../../pages/RewardsPage").then((module) => ({
+    default: module.RewardsPage,
+  }))
+);
+const ProfilePage = lazy(() =>
+  import("../../pages/ProfilePage").then((module) => ({
+    default: module.ProfilePage,
   }))
 );
 const NotFoundPage = lazy(() =>
@@ -62,16 +87,25 @@ function RequireAuth() {
   return <Outlet />;
 }
 
+function GuestOnly() {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return <RouteFallback />;
+  if (isAuthenticated) {
+    return <Navigate to="/home" replace />;
+  }
+  return <Outlet />;
+}
+
 function UnauthorizedPage() {
   const { t } = useTranslation();
 
   return (
-    <section className="mx-auto max-w-3xl">
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+    <section className="mx-auto max-w-lg">
+      <div className="rounded-2xl border border-line bg-surface p-6 shadow-sm">
+        <h1 className="text-2xl font-bold tracking-tight text-ink">
           {t("router.accessDeniedTitle")}
         </h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-sm text-ink-muted">
           {t("router.accessDeniedDescription")}
         </p>
       </div>
@@ -98,32 +132,16 @@ function PermissionRedirect() {
 
 function RequirePermission({
   requiredPermissions,
-  redirectToFirstAllowed = true,
   children,
 }: {
   requiredPermissions: readonly string[];
-  redirectToFirstAllowed?: boolean;
   children: React.ReactNode;
 }) {
   const { isLoading } = useAuth();
   const { canAccess } = usePermissions();
-  const location = useLocation();
 
   if (isLoading) return <RouteFallback />;
   if (!canAccess(requiredPermissions)) {
-    if (redirectToFirstAllowed) {
-      const firstAccessibleRoute = PERMISSION_ROUTE_ORDER.find((entry) =>
-        canAccess(entry.permissions)
-      );
-
-      if (
-        firstAccessibleRoute &&
-        firstAccessibleRoute.path !== location.pathname
-      ) {
-        return <Navigate to={firstAccessibleRoute.path} replace />;
-      }
-    }
-
     return <UnauthorizedPage />;
   }
   return <>{children}</>;
@@ -134,37 +152,46 @@ export function AppRouter() {
     <BrowserRouter>
       <Suspense fallback={<RouteFallback />}>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
+          <Route element={<GuestOnly />}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+          </Route>
+
+          {/* Verification can happen before or after login */}
+          <Route path="/verify-phone" element={<VerifyPhonePage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+
           <Route element={<RequireAuth />}>
             <Route element={<AppShell />}>
               <Route path="/" element={<PermissionRedirect />} />
+              <Route path="/dashboard" element={<Navigate to="/home" replace />} />
               <Route
-                path="/dashboard"
+                path="/home"
                 element={
-                  <RequirePermission
-                    requiredPermissions={PAGE_PERMISSIONS.dashboard}
-                  >
-                    <DashboardPage />
+                  <RequirePermission requiredPermissions={PAGE_PERMISSIONS.home}>
+                    <HomePage />
                   </RequirePermission>
                 }
               />
               <Route
-                path="/users"
+                path="/rewards"
                 element={
                   <RequirePermission
-                    requiredPermissions={PAGE_PERMISSIONS.users}
+                    requiredPermissions={PAGE_PERMISSIONS.rewards}
                   >
-                    <UsersPage />
+                    <RewardsPage />
                   </RequirePermission>
                 }
               />
               <Route
-                path="/customers"
+                path="/profile"
                 element={
                   <RequirePermission
-                    requiredPermissions={PAGE_PERMISSIONS.customers}
+                    requiredPermissions={PAGE_PERMISSIONS.profile}
                   >
-                    <CustomersPage />
+                    <ProfilePage />
                   </RequirePermission>
                 }
               />

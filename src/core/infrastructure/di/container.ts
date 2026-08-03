@@ -2,6 +2,7 @@ import { HttpClient } from "../api/HttpClient";
 import { IUserRepository } from "../../domain/repositories/IUserRepository";
 import { ApiUserRepository } from "../repositories/ApiUserRepository";
 import { ApiAuthRepository } from "../repositories/ApiAuthRepository";
+import { IAuthRepository } from "../../domain/repositories/IAuthRepository";
 import { ICustomerRepository } from "../../domain/repositories/ICustomerRepository";
 import { ApiCustomerRepository } from "../repositories/ApiCustomerRepository";
 import { IAuthService } from "../../domain/services/IAuthService";
@@ -30,7 +31,7 @@ class Container {
       new ApiUserRepository(this.resolve("httpClient"))
     );
 
-    this.register<ApiAuthRepository>(
+    this.register<IAuthRepository>(
       "authRepository",
       new ApiAuthRepository(this.resolve("httpClient"))
     );

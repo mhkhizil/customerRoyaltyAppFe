@@ -4,19 +4,20 @@ Short working guide for bootstrapping a new project from this template.
 
 ## 1. What this template is
 
-A generic authenticated frontend shell with onion architecture:
+A **Customer Royalty** (loyalty/rewards) frontend with onion architecture:
 
 - pages/UI stay thin
 - hooks call application services
 - services depend on domain interfaces
 - infrastructure implements HTTP/API details
+- mobile-first shell (bottom nav) for Median.io
 
-Starter routes:
+Starter customer routes:
 
-- `/login`
-- `/dashboard`
-- `/users` (example)
-- `/customers` (example)
+- `/login`, `/register`, forgot/reset password, verify phone/email
+- `/home` — points + verification status
+- `/rewards` — redeemable offers (placeholder until API)
+- `/profile` — account details
 
 ## 2. Stack
 
@@ -57,10 +58,9 @@ Update `API_ENDPOINTS.AUTH.LOGIN` for your backend.
 File: `src/features/permissions/usePermissions.ts`
 
 - Maps routes to required permissions
-- Full-access users bypass permission checks
-- Sidebar and route guards must use the same helper
+- Bottom nav and route guards must use the same helper
 
-Adapt role names and permission keys to your product. This template is not admin-dashboard-only.
+Member routes default to open for any authenticated client (`home` / `rewards` / `profile`).
 
 ## 6. Architecture example: Customers
 
@@ -85,7 +85,7 @@ Copy that path for every new resource.
 3. Register in the DI container
 4. Expose a presentation hook
 5. Build a thin page that only uses the hook
-6. Wire route + sidebar + permissions
+6. Wire route + bottom nav + permissions
 7. Add i18n keys in `src/lib/i18n/locales/en.json`
 8. Run `npm run build`
 
