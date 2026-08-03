@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { applyShopTheme, getConfiguredShopThemeId } from "./applyShopTheme";
 import { ThemeContext, type ThemeMode } from "./ThemeContext";
 
 const THEME_STORAGE_KEY = "theme-mode";
@@ -45,6 +46,8 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     } else {
       document.documentElement.classList.remove("dark");
     }
+
+    applyShopTheme(theme, getConfiguredShopThemeId());
 
     if (followSystemTheme) {
       window.localStorage.removeItem(THEME_STORAGE_KEY);

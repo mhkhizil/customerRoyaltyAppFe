@@ -1,29 +1,33 @@
 # AGENTS.md
 
+> **Read first:** [docs/AI_CHANGE_GUIDE.md](./docs/AI_CHANGE_GUIDE.md)  
+> Then follow [architecture.md](./architecture.md) and [src/theme/README.md](./src/theme/README.md).
+
 This file applies to the entire repository.
 
 ## Purpose
 
-Use this project as a **reusable frontend template** for authenticated apps.
-It may become an admin dashboard, an internal tool, or another product UI.
+Customer Royalty App frontend — authenticated loyalty/rewards experience, white-labeled per shop.
 
 When implementing features, prioritize:
 
-- following [architecture.md](./architecture.md)
+- [docs/AI_CHANGE_GUIDE.md](./docs/AI_CHANGE_GUIDE.md) (architecture, types, responsive, theme)
+- [architecture.md](./architecture.md)
 - exact backend contract matching
-- permission-aware route/sidebar behavior when your app needs it
+- permission-aware route/sidebar behavior when needed
 - consistency with existing page, hook, and service patterns
 - minimal, focused changes
 
 ## Tech Stack
 
 - React with functional components and hooks
-- TypeScript
+- TypeScript (strict — no `any`)
 - Vite
 - Axios via `HttpClient`
-- Tailwind CSS for UI styling
+- Tailwind CSS with shop theme tokens (`bg-brand`, `bg-accent`, …)
 - Framer Motion for shell/page transitions
-- i18n is present; new features should add keys in `src/lib/i18n/locales/en.json`
+- i18n — add keys in `src/lib/i18n/locales/en.json`
+- Responsive / mobile-first (Median.io wrapper planned)
 
 ## Architecture (required)
 
@@ -49,54 +53,38 @@ Work inside-out:
 5. Implement `Api*Repository` and add paths in `src/core/infrastructure/api/constants.ts`
 6. Register repository/service in `src/core/infrastructure/di/container.ts`
 7. Add presentation hook
-8. Add page under `src/pages/`
+8. Add page under `src/pages/` (responsive, theme tokens)
 9. Add route in `src/app/router/AppRouter.tsx`
 10. Add sidebar item in `src/widgets/layout/AppShell.tsx`
 11. Add permission mapping in `src/features/permissions/usePermissions.ts` when needed
-12. Run `npm run build`
+12. Run `npm run typecheck` and `npm run build`
 
-Starter examples already in the template:
+Starter examples:
 
 - Auth (`useAuth`)
 - Users (`useUserManagement`)
-- Customers (`useCustomerManagement`) — the extra end-to-end resource example
+- Customers (`useCustomerManagement`)
 
-## API Rules
+## Theme rules
 
-- Never guess request payload field names
-- Match backend request/response shapes exactly
-- Normalize inconsistent response shapes inside infrastructure repositories or application services, not inside page components
-- Keep auth-aware Axios behavior consistent with `HttpClient`
+- Shop colors: `src/theme/shopTheme.ts` only
+- Use Tailwind theme tokens — never hard-code hex in components
+- See `src/theme/README.md`
 
-## Permission Rules
+## UI rules
 
-- `src/features/permissions/usePermissions.ts` is a skeleton
-- Full-access role handling and `permissions[]` come from the authenticated user
-- Sidebar visibility and route access must use the same permission source
-- Do not invent permission keys unless the backend provides them
-- Adapt role names/keys to your product; this template is not admin-only
+- Mobile-first responsive layouts (Median.io)
+- Reuse `src/components/ui` components
+- Keep pages thin; business logic in services/hooks
 
-## UI Rules
+## Validation rules
 
-- Use Tailwind utility classes for layout and styling
-- Reuse shared UI components in `src/components/ui` where possible
-- Prefer clean, compact layouts over custom one-off designs
-- Keep pages thin; business logic belongs in services/hooks
-
-## Routing and Access
-
-- Route guards should redirect to the first allowed page when appropriate
-- If the user lacks access and no allowed page exists, show the access denied view
-
-## Validation Rules
-
-- Run `npm run build` after meaningful frontend changes
+- Run `npm run typecheck` and `npm run build` after meaningful changes
+- No `any` types
 - Fix compile errors caused by your changes
-- Do not attempt to fix unrelated warnings unless asked
 
-## Change Discipline
+## Change discipline
 
 - Keep changes surgical
 - Do not rename existing files or abstractions without strong reason
 - Do not rewrite unrelated modules
-- Do not add speculative abstractions unless there is immediate reuse

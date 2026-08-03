@@ -23,6 +23,8 @@
     },
 
     /* Linting */
+    "strict": true,
+    "noImplicitAny": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true

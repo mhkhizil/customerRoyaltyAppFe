@@ -13,15 +13,15 @@ type ButtonProps = {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "bg-slate-900 hover:bg-slate-950 active:bg-slate-900 text-white border-slate-900 hover:border-slate-950 shadow-sm dark:bg-white dark:text-slate-900 dark:border-white dark:hover:bg-slate-100",
+    "bg-brand hover:bg-brand-strong active:bg-brand text-white border-brand shadow-sm dark:text-slate-900",
   secondary:
-    "bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-600 border-slate-200 hover:border-slate-300 shadow-sm dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800",
+    "bg-surface hover:bg-surface-muted active:bg-surface text-ink border-line shadow-sm dark:bg-surface-muted dark:text-ink dark:border-line",
   outline:
-    "bg-transparent hover:bg-slate-50 active:bg-slate-100 text-slate-600 border-slate-200 hover:border-slate-300 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800",
+    "bg-transparent hover:bg-surface-muted active:bg-surface text-ink border-line dark:text-ink dark:border-line dark:hover:bg-surface-muted",
   destructive:
-    "bg-white hover:bg-red-50 active:bg-red-100 text-red-600 border-red-200 hover:border-red-300 shadow-sm dark:bg-slate-900 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-950/40",
+    "bg-surface hover:bg-danger/10 active:bg-danger/15 text-danger border-danger/30 shadow-sm dark:bg-surface dark:text-danger dark:border-danger/40",
   ghost:
-    "bg-transparent hover:bg-slate-100 active:bg-slate-200 text-slate-500 border-transparent hover:border-transparent dark:text-slate-300 dark:hover:bg-slate-800",
+    "bg-transparent hover:bg-surface-muted active:bg-surface text-ink-muted border-transparent dark:text-ink-muted dark:hover:bg-surface-muted",
 };
 
 const sizeStyles: Record<ButtonSize, string> = {

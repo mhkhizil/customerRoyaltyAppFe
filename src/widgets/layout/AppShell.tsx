@@ -128,10 +128,10 @@ export function AppShell() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex min-h-screen bg-surface">
       <aside
         className={[
-          "flex shrink-0 flex-col border-r border-slate-800 bg-slate-900 text-white transition-[width] duration-200",
+          "flex shrink-0 flex-col border-r border-line bg-accent text-white transition-[width] duration-200",
           isSidebarExpanded ? "w-72" : "w-[4.5rem]",
         ].join(" ")}
       >
@@ -203,20 +203,18 @@ export function AppShell() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90 sm:px-6">
+        <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4 border-b border-line bg-surface/95 px-4 py-3 backdrop-blur sm:px-6">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <div className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
               {t("shell.topbarTitle")}
             </div>
-            <div className="text-sm text-slate-600 dark:text-slate-300">
-              {t("shell.topbarSubtitle")}
-            </div>
+            <div className="text-sm text-ink-muted">{t("shell.topbarSubtitle")}</div>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <Button
               variant="ghost"
               size="sm"
-              className="text-slate-600 dark:text-slate-300"
+              className="text-ink-muted"
               aria-label={t("shell.mainMenu")}
               aria-pressed={isSidebarExpanded}
               onClick={() => setIsSidebarExpanded((prev) => !prev)}
@@ -226,13 +224,9 @@ export function AppShell() {
             <LanguageSwitcher />
             <ThemeToggle />
             <div className="hidden text-right sm:block">
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                {t("shell.signedInAs")}
-              </div>
-              <div className="text-sm font-medium text-slate-900 dark:text-white">
-                {currentUserName}
-              </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">
+              <div className="text-[11px] text-ink-muted">{t("shell.signedInAs")}</div>
+              <div className="text-sm font-medium text-ink">{currentUserName}</div>
+              <div className="text-xs text-ink-muted">
                 {isFullAccess
                   ? t("shell.fullAccessRole")
                   : resolvedRoleName || t("shell.userRole")}

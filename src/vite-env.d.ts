@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_URL?: string
+  readonly VITE_SHOP_THEME_ID?: string
 }
 
 interface ImportMeta {

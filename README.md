@@ -6,10 +6,11 @@ Use it for admin dashboards, internal tools, or other product UIs. Replace the e
 
 ## Start here
 
+- **AI / contributors:** [docs/AI_CHANGE_GUIDE.md](./docs/AI_CHANGE_GUIDE.md) (read first)
 - Architecture guide: [architecture.md](./architecture.md)
-- Agent/contributor rules: [AGENTS.md](./AGENTS.md)
+- Agent rules: [AGENTS.md](./AGENTS.md)
+- Shop theme: [src/theme/README.md](./src/theme/README.md)
 - Project guide: [docs/PROJECT_GUIDE.md](./docs/PROJECT_GUIDE.md)
-- Core map: [src/core/README.md](./src/core/README.md)
 
 ## What is included
 

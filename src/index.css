@@ -2,13 +2,28 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --color-brand: var(--shop-brand);
+  --color-brand-strong: var(--shop-brand-strong);
+  --color-brand-soft: var(--shop-brand-soft);
+  --color-accent: var(--shop-accent);
+  --color-accent-soft: var(--shop-accent-soft);
+  --color-surface: var(--shop-surface);
+  --color-surface-muted: var(--shop-surface-muted);
+  --color-ink: var(--shop-text);
+  --color-ink-muted: var(--shop-text-muted);
+  --color-line: var(--shop-border);
+  --color-success: var(--shop-success);
+  --color-danger: var(--shop-danger);
+}
+
 @layer base {
   html {
     @apply antialiased;
   }
 
   body {
-    @apply min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+    @apply min-h-screen bg-surface text-ink;
   }
 
   #root {
