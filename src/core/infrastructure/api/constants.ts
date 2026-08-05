@@ -11,6 +11,8 @@ export const API_ENDPOINTS = {
   AUTH: {
     REGISTER: "/api/v1/client/auth/register",
     LOGIN: "/api/v1/client/auth/login",
+    REFRESH: "/api/v1/client/auth/refresh",
+    LOGOUT: "/api/v1/client/auth/logout",
     FORGOT_PASSWORD: "/api/v1/client/auth/forgot-password",
     RESET_PASSWORD: "/api/v1/client/auth/reset-password",
     OTP_SEND: "/api/v1/client/auth/otp/send",
@@ -19,6 +21,12 @@ export const API_ENDPOINTS = {
     EMAIL_VERIFY: "/api/v1/client/auth/email/verify",
     ME: "/api/v1/client/auth/me",
     UPDATE_DATE_OF_BIRTH: "/api/v1/client/auth/me/date-of-birth",
+  },
+
+  /** Authenticated client points (Bearer required). */
+  POINTS: {
+    QR_TOKEN_ROTATE: "/api/v1/client/points/qr-token/rotate",
+    TRANSACTIONS: "/api/v1/client/points/transactions",
   },
 
   USERS: {
@@ -53,6 +61,8 @@ export const API_ENDPOINTS = {
 export const PUBLIC_AUTH_PATHS: readonly string[] = [
   API_ENDPOINTS.AUTH.REGISTER,
   API_ENDPOINTS.AUTH.LOGIN,
+  API_ENDPOINTS.AUTH.REFRESH,
+  API_ENDPOINTS.AUTH.LOGOUT,
   API_ENDPOINTS.AUTH.FORGOT_PASSWORD,
   API_ENDPOINTS.AUTH.RESET_PASSWORD,
   API_ENDPOINTS.AUTH.OTP_SEND,

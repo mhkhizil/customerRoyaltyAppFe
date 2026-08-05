@@ -4,6 +4,8 @@
  * Falls back to sessionStorage if cookies are not available
  */
 
+import { clearCustomerQrStorage, resetCustomerQrSession } from "./customerQrCache";
+
 interface CookieOptions {
   expires?: Date;
   maxAge?: number;
@@ -96,6 +98,7 @@ export function getTimeUntilExpiration(token: string): number {
 }
 
 export function clearAuthAndRedirectToLogin(): void {
+  clearCustomerQrStorage();
   tokenCookies.clearAll();
 
   if (typeof window === "undefined") {
@@ -244,10 +247,12 @@ class SecureStorage {
   clear(): void {
     if (this.useCookies) {
       removeCookie("wms_token");
+      removeCookie("wms_refresh_token");
       removeCookie("wms_user");
       removeCookie("wms_csrf_token");
     } else {
       sessionStorage.removeItem("wms_token");
+      sessionStorage.removeItem("wms_refresh_token");
       sessionStorage.removeItem("wms_user");
       sessionStorage.removeItem("wms_csrf_token");
     }
@@ -280,6 +285,39 @@ export const tokenCookies = {
    */
   removeToken: () => {
     secureStorage.removeItem("wms_token");
+  },
+
+  /**
+   * Set refresh token (longer-lived session rotation credential).
+   */
+  setRefreshToken: (token: string) => {
+    if (areCookiesEnabled()) {
+      setCookie("wms_refresh_token", token, {
+        maxAge: 30 * 24 * 60 * 60,
+        path: "/",
+        secure: true,
+        sameSite: "Strict",
+      });
+    } else {
+      sessionStorage.setItem("wms_refresh_token", token);
+    }
+  },
+
+  /**
+   * Get refresh token
+   */
+  getRefreshToken: (): string | null => {
+    if (areCookiesEnabled()) {
+      return getCookie("wms_refresh_token");
+    }
+    return sessionStorage.getItem("wms_refresh_token");
+  },
+
+  /**
+   * Remove refresh token
+   */
+  removeRefreshToken: () => {
+    secureStorage.removeItem("wms_refresh_token");
   },
 
   /**
@@ -328,6 +366,7 @@ export const tokenCookies = {
    * Clear all auth-related cookies
    */
   clearAll: () => {
+    resetCustomerQrSession();
     secureStorage.clear();
     // Also clear CSRF token
     secureStorage.removeItem("wms_csrf_token");

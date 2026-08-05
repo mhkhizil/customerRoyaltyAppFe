@@ -5,12 +5,16 @@ import { ApiAuthRepository } from "../repositories/ApiAuthRepository";
 import { IAuthRepository } from "../../domain/repositories/IAuthRepository";
 import { ICustomerRepository } from "../../domain/repositories/ICustomerRepository";
 import { ApiCustomerRepository } from "../repositories/ApiCustomerRepository";
+import { IPointsRepository } from "../../domain/repositories/IPointsRepository";
+import { ApiPointsRepository } from "../repositories/ApiPointsRepository";
 import { IAuthService } from "../../domain/services/IAuthService";
 import { AuthService } from "../../application/services/AuthService";
 import { UserManagementService } from "../../application/services/UserManagementService";
 import { CustomerManagementService } from "../../application/services/CustomerManagementService";
+import { PointsService } from "../../application/services/PointsService";
 import { ICustomerService } from "../../domain/services/ICustomerService";
 import { IUserService } from "../../domain/services/IUserService";
+import { IPointsService } from "../../domain/services/IPointsService";
 
 /**
  * Dependency Injection Container
@@ -41,6 +45,11 @@ class Container {
       new ApiCustomerRepository(this.resolve("httpClient"))
     );
 
+    this.register<IPointsRepository>(
+      "pointsRepository",
+      new ApiPointsRepository(this.resolve("httpClient"))
+    );
+
     this.register<IAuthService>(
       "authService",
       new AuthService(this.resolve("authRepository"))
@@ -54,6 +63,11 @@ class Container {
     this.register<ICustomerService>(
       "customerService",
       new CustomerManagementService(this.resolve("customerRepository"))
+    );
+
+    this.register<IPointsService>(
+      "pointsService",
+      new PointsService(this.resolve("pointsRepository"))
     );
   }
 

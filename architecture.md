@@ -87,13 +87,13 @@ File: **`src/core/infrastructure/di/container.ts`**
 
 ## Template starter features
 
-This repository ships with three core examples only:
+Customer Royalty App core flows:
 
-1. **Auth** — login/session via `useAuth`
-2. **Users** — list/management via `useUserManagement`
-3. **Customers** — extra end-to-end CRUD example via `useCustomerManagement`
+1. **Auth** — client register/login/OTP via `useAuth` (`/api/v1/client/auth/*`)
+2. **Points** — QR rotate + transactions via `useClientPoints` (`/api/v1/client/points/*`)
+3. **Users / Customers** — leftover architecture samples (`useUserManagement`, `useCustomerManagement`)
 
-Replace or extend these when starting a real product. The template is not limited to admin dashboards.
+The product UI is member-facing (Home / Rewards / Profile), not an admin dashboard.
 
 ## How to add a new feature (checklist)
 

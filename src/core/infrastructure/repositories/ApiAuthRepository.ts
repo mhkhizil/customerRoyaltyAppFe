@@ -2,10 +2,13 @@ import axios from "axios";
 import type {
   ApiEnvelopeDTO,
   AuthActionResultDTO,
+  AuthTokensDTO,
   ClientAuthUserDTO,
   ClientLoginDTO,
   ClientLoginResponseDTO,
   ForgotPasswordDTO,
+  LogoutRequestDTO,
+  LogoutResultDTO,
   RegisterClientDTO,
   ResetPasswordDTO,
   SendEmailVerificationDTO,
@@ -18,6 +21,10 @@ import type { AdminAccess, UserRole, VerificationTag } from "../../domain/entiti
 import { User } from "../../domain/entities/User";
 import type { IAuthRepository } from "../../domain/repositories/IAuthRepository";
 import { isTokenExpired, tokenCookies } from "@/lib/cookies";
+import {
+  persistAuthTokens,
+  refreshAccessToken,
+} from "../auth/sessionTokenRefresh";
 import { API_CONFIG, API_ENDPOINTS } from "../api/constants";
 import { HttpClient } from "../api/HttpClient";
 
@@ -73,7 +80,7 @@ export class ApiAuthRepository implements IAuthRepository {
 
   async login(
     payload: ClientLoginDTO
-  ): Promise<{ user: User; token: string }> {
+  ): Promise<{ user: User; tokens: AuthTokensDTO }> {
     try {
       this.clearPersistedAuthenticatedSession();
 
@@ -82,10 +89,23 @@ export class ApiAuthRepository implements IAuthRepository {
       >(API_ENDPOINTS.AUTH.LOGIN, payload);
 
       const data = this.unwrapData(response.data);
-      const token = asString(asRecord(data.tokens)?.accessToken);
-      if (!token) {
-        throw new Error("Login response did not include a token");
+      const tokensRecord = asRecord(data.tokens);
+      const accessToken = asString(tokensRecord?.accessToken);
+      const refreshToken = asString(tokensRecord?.refreshToken);
+
+      if (!accessToken) {
+        throw new Error("Login response did not include an access token");
       }
+      if (!refreshToken) {
+        throw new Error("Login response did not include a refresh token");
+      }
+
+      const tokens: AuthTokensDTO = {
+        accessToken,
+        refreshToken,
+        expiresIn: asString(tokensRecord?.expiresIn) || undefined,
+        refreshExpiresIn: asString(tokensRecord?.refreshExpiresIn) || undefined,
+      };
 
       const userDto = asRecord(data.user) as ClientAuthUserDTO | null;
       if (!userDto?.id) {
@@ -93,19 +113,39 @@ export class ApiAuthRepository implements IAuthRepository {
       }
 
       const user = this.mapClientUserToEntity(userDto);
-      this.persistAuthenticatedSession(token, user);
-      return { user, token };
+      this.persistAuthenticatedSession(tokens, user);
+      return { user, tokens };
     } catch (error: unknown) {
       throw new Error(extractApiErrorMessage(error, "Invalid credentials"));
     }
   }
 
-  async logout(): Promise<void> {
+  async refreshSession(): Promise<boolean> {
+    return refreshAccessToken();
+  }
+
+  async logout(): Promise<LogoutResultDTO | null> {
+    const refreshToken = tokenCookies.getRefreshToken();
+
     try {
-      this.httpClient.clearCsrfToken();
-      this.clearPersistedAuthenticatedSession();
+      if (refreshToken) {
+        const response = await this.httpClient.post<
+          ApiEnvelopeDTO<LogoutResultDTO>
+        >(API_ENDPOINTS.AUTH.LOGOUT, {
+          refreshToken,
+        } satisfies LogoutRequestDTO);
+        const result = this.unwrapData(response.data);
+        return {
+          revoked: Boolean(asRecord(result)?.revoked),
+        };
+      }
+      return null;
     } catch (error: unknown) {
       console.error("Error during logout:", error);
+      return null;
+    } finally {
+      this.httpClient.clearCsrfToken();
+      this.clearPersistedAuthenticatedSession();
     }
   }
 
@@ -113,8 +153,11 @@ export class ApiAuthRepository implements IAuthRepository {
     try {
       const token = tokenCookies.getToken();
       if (!token || isTokenExpired(token)) {
-        this.clearPersistedAuthenticatedSession();
-        return null;
+        const refreshed = await refreshAccessToken();
+        if (!refreshed) {
+          this.clearPersistedAuthenticatedSession();
+          return null;
+        }
       }
 
       try {
@@ -337,8 +380,8 @@ export class ApiAuthRepository implements IAuthRepository {
     return `${API_CONFIG.BASE_URL}${url}`;
   }
 
-  private persistAuthenticatedSession(token: string, user: User): void {
-    tokenCookies.setToken(token);
+  private persistAuthenticatedSession(tokens: AuthTokensDTO, user: User): void {
+    persistAuthTokens(tokens);
     tokenCookies.setUser(JSON.stringify(user));
   }
 

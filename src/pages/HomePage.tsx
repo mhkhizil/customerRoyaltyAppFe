@@ -1,12 +1,27 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { CustomerQrCard } from "@/components/points/CustomerQrCard";
+import { PointsTransactionList } from "@/components/points/PointsTransactionList";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/core/presentation/hooks/useAuth";
+import { useClientPoints } from "@/core/presentation/hooks/useClientPoints";
 
 export function HomePage() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const displayName = user?.nickname || user?.name || t("shell.userFallback");
+  const {
+    qrToken,
+    transactions,
+    balance,
+    isLoadingQr,
+    isLoadingTransactions,
+    error,
+    rotateQrToken,
+    refresh,
+    clearError,
+  } = useClientPoints();
+
+  const displayName = user?.nickname || t("shell.userFallback");
   const phoneVerified = Boolean(user?.isPhoneVerified);
   const emailVerified = Boolean(user?.isEmailVerified);
 
@@ -22,29 +37,59 @@ export function HomePage() {
 
       <div className="rounded-3xl bg-brand p-5 text-white shadow-sm sm:p-6">
         <p className="text-sm font-medium text-white/80">{t("home.pointsLabel")}</p>
-        <p className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
-          {t("home.pointsPlaceholder")}
+        <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl">
+          {balance === null ? t("home.pointsPlaceholder") : balance}
         </p>
-        <p className="mt-2 text-sm text-white/80">{t("home.pointsHint")}</p>
+        <p className="mt-2 text-sm text-white/80">
+          {balance === null ? t("home.pointsHint") : t("home.pointsFromLedger")}
+        </p>
         <div className="mt-5 flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            className="min-h-11 border-white/20 bg-white text-brand hover:bg-brand-soft"
+            isLoading={isLoadingTransactions}
+            onClick={() => {
+              clearError();
+              void refresh().catch(() => {
+                /* error surfaced below */
+              });
+            }}
+          >
+            {t("home.refreshPoints")}
+          </Button>
           <Link to="/rewards">
-            <Button
-              variant="secondary"
-              className="min-h-11 border-white/20 bg-white text-brand hover:bg-brand-soft"
-            >
-              {t("home.viewRewards")}
-            </Button>
-          </Link>
-          <Link to="/profile">
             <Button
               variant="ghost"
               className="min-h-11 border border-white/30 text-white hover:bg-white/10"
             >
-              {t("home.viewProfile")}
+              {t("home.viewRewards")}
             </Button>
           </Link>
         </div>
       </div>
+
+      {error ? (
+        <p className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
+
+      <CustomerQrCard
+        qrToken={qrToken}
+        isLoading={isLoadingQr}
+        onRefresh={() => {
+          clearError();
+          void rotateQrToken().catch(() => {
+            /* error surfaced above */
+          });
+        }}
+      />
+
+      <PointsTransactionList
+        transactions={transactions}
+        isLoading={isLoadingTransactions}
+      />
 
       <div className="grid gap-3 sm:grid-cols-2">
         <article className="rounded-2xl border border-line bg-surface p-4">
@@ -83,15 +128,6 @@ export function HomePage() {
           ) : null}
         </article>
       </div>
-
-      <article className="rounded-2xl border border-line bg-surface-muted p-4 sm:p-5">
-        <h2 className="text-lg font-semibold text-ink">{t("home.howItWorksTitle")}</h2>
-        <ul className="mt-3 space-y-2 text-sm text-ink-muted">
-          <li>{t("home.howItWorksStep1")}</li>
-          <li>{t("home.howItWorksStep2")}</li>
-          <li>{t("home.howItWorksStep3")}</li>
-        </ul>
-      </article>
     </section>
   );
 }

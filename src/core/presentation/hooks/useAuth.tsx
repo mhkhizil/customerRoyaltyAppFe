@@ -57,7 +57,9 @@ export function AuthProvider({ children, service }: AuthProviderProps) {
   const authService = service || container.resolve<IAuthService>("authService");
 
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  /** Initial session check only — must not unmount authenticated routes. */
+  const [isBootstrapping, setIsBootstrapping] = useState(true);
+  const [isActionLoading, setIsActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -68,7 +70,7 @@ export function AuthProvider({ children, service }: AuthProviderProps) {
       } catch (err: unknown) {
         console.error("Auth check failed:", err);
       } finally {
-        setIsLoading(false);
+        setIsBootstrapping(false);
       }
     };
 
@@ -81,7 +83,7 @@ export function AuthProvider({ children, service }: AuthProviderProps) {
     action: () => Promise<T>,
     fallbackMessage: string
   ): Promise<T> => {
-    setIsLoading(true);
+    setIsActionLoading(true);
     setError(null);
     try {
       return await action();
@@ -91,7 +93,7 @@ export function AuthProvider({ children, service }: AuthProviderProps) {
       setError(message);
       throw err instanceof Error ? err : new Error(message);
     } finally {
-      setIsLoading(false);
+      setIsActionLoading(false);
     }
   };
 
@@ -109,14 +111,14 @@ export function AuthProvider({ children, service }: AuthProviderProps) {
     );
 
   const logout = async () => {
-    setIsLoading(true);
+    setIsActionLoading(true);
     try {
       await authService.logout();
       setUser(null);
     } catch (err: unknown) {
       console.error("Logout error:", err);
     } finally {
-      setIsLoading(false);
+      setIsActionLoading(false);
     }
   };
 
@@ -174,7 +176,7 @@ export function AuthProvider({ children, service }: AuthProviderProps) {
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
-    isLoading,
+    isLoading: isBootstrapping || isActionLoading,
     error,
     login,
     register,

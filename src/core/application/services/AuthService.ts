@@ -95,6 +95,15 @@ export class AuthService implements IAuthService {
     }
   }
 
+  async refreshSession(): Promise<boolean> {
+    try {
+      return await this.authRepository.refreshSession();
+    } catch (error: unknown) {
+      console.error("Error refreshing session:", error);
+      return false;
+    }
+  }
+
   async getCurrentUser(): Promise<User | null> {
     try {
       return await this.authRepository.getCurrentUser();

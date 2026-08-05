@@ -77,10 +77,11 @@ function RouteFallback() {
 }
 
 function RequireAuth() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
 
-  if (isLoading) return <RouteFallback />;
+  // Only block on the initial session check — never unmount the shell for later actions.
+  if (isLoading && !user) return <RouteFallback />;
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
@@ -88,8 +89,8 @@ function RequireAuth() {
 }
 
 function GuestOnly() {
-  const { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) return <RouteFallback />;
+  const { isAuthenticated, isLoading, user } = useAuth();
+  if (isLoading && !user && !isAuthenticated) return <RouteFallback />;
   if (isAuthenticated) {
     return <Navigate to="/home" replace />;
   }
@@ -114,10 +115,10 @@ function UnauthorizedPage() {
 }
 
 function PermissionRedirect() {
-  const { isLoading } = useAuth();
+  const { isLoading, user } = useAuth();
   const { canAccess } = usePermissions();
 
-  if (isLoading) return <RouteFallback />;
+  if (isLoading && !user) return <RouteFallback />;
 
   const firstAccessibleRoute = PERMISSION_ROUTE_ORDER.find((entry) =>
     canAccess(entry.permissions)
@@ -137,10 +138,10 @@ function RequirePermission({
   requiredPermissions: readonly string[];
   children: React.ReactNode;
 }) {
-  const { isLoading } = useAuth();
+  const { isLoading, user } = useAuth();
   const { canAccess } = usePermissions();
 
-  if (isLoading) return <RouteFallback />;
+  if (isLoading && !user) return <RouteFallback />;
   if (!canAccess(requiredPermissions)) {
     return <UnauthorizedPage />;
   }

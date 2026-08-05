@@ -81,11 +81,28 @@ export type ClientAuthUserDTO = {
   }>;
 };
 
+export type AuthTokensDTO = {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn?: string;
+  refreshExpiresIn?: string;
+};
+
+export type RefreshTokenRequestDTO = {
+  refreshToken: string;
+};
+
+export type LogoutRequestDTO = {
+  refreshToken: string;
+};
+
+export type LogoutResultDTO = {
+  revoked: boolean;
+};
+
 export type ClientLoginResponseDTO = {
   user: ClientAuthUserDTO;
-  tokens: {
-    accessToken: string;
-  };
+  tokens: AuthTokensDTO;
 };
 
 export type ApiEnvelopeDTO<T> = {

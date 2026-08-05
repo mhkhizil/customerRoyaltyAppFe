@@ -18,6 +18,7 @@ import type { User } from "../entities/User";
 export interface IAuthService {
   register(payload: RegisterClientDTO): Promise<AuthActionResultDTO>;
   login(payload: ClientLoginDTO): Promise<User>;
+  refreshSession(): Promise<boolean>;
   logout(): Promise<void>;
   getCurrentUser(): Promise<User | null>;
   isAuthenticated(): Promise<boolean>;
