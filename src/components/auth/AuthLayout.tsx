@@ -18,8 +18,8 @@ export function AuthLayout({
   const { t } = useTranslation();
 
   return (
-    <section className="flex min-h-screen items-center justify-center bg-surface-muted px-4 py-8 sm:py-10">
-      <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-5 shadow-sm sm:p-8">
+    <section className="flex min-h-screen items-center justify-center bg-surface-muted px-4 py-8 sm:px-6 sm:py-10 md:px-8 md:py-12">
+      <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-5 shadow-sm sm:p-8 md:max-w-lg md:p-10">
         <div className="mb-6 text-center">
           <Link
             to="/login"

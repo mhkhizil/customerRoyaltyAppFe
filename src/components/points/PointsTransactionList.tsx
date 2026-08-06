@@ -41,11 +41,11 @@ export function PointsTransactionList({
   const { t, i18n } = useTranslation();
 
   return (
-    <article className="rounded-2xl border border-line bg-surface p-4 sm:p-5">
-      <h2 className="text-lg font-semibold text-ink">
+    <article className="rounded-2xl border border-line bg-surface p-4 sm:p-5 md:p-6">
+      <h2 className="text-lg font-semibold text-ink md:text-xl">
         {t("points.transactionsTitle")}
       </h2>
-      <p className="mt-1 text-sm text-ink-muted">
+      <p className="mt-1 text-sm text-ink-muted md:text-base">
         {t("points.transactionsSubtitle")}
       </p>
 

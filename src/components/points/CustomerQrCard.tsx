@@ -44,7 +44,7 @@ export function CustomerQrCard({
     void QRCode.toDataURL(tokenValue, {
       errorCorrectionLevel: "M",
       margin: 2,
-      width: 240,
+      width: 320,
       color: {
         dark: "#0f172a",
         light: "#ffffff",
@@ -69,17 +69,21 @@ export function CustomerQrCard({
   }, [tokenValue]);
 
   return (
-    <article className="rounded-3xl border border-line bg-surface p-5 shadow-sm sm:p-6">
+    <article className="h-full rounded-3xl border border-line bg-surface p-5 shadow-sm sm:p-6 md:p-8">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold text-ink">{t("points.qrTitle")}</h2>
-          <p className="mt-1 text-sm text-ink-muted">{t("points.qrSubtitle")}</p>
+          <h2 className="text-lg font-semibold text-ink md:text-xl">
+            {t("points.qrTitle")}
+          </h2>
+          <p className="mt-1 text-sm text-ink-muted md:text-base">
+            {t("points.qrSubtitle")}
+          </p>
         </div>
         <Button
           type="button"
           variant="secondary"
           size="sm"
-          className="min-h-11 shrink-0"
+          className="min-h-11 shrink-0 md:min-h-12"
           isLoading={isLoading}
           onClick={onRefresh}
         >
@@ -87,8 +91,8 @@ export function CustomerQrCard({
         </Button>
       </div>
 
-      <div className="mt-5 flex flex-col items-center gap-3">
-        <div className="flex h-60 w-60 items-center justify-center rounded-2xl border border-line bg-white p-3">
+      <div className="mt-5 flex flex-col items-center gap-3 md:mt-8">
+        <div className="flex h-60 w-60 items-center justify-center rounded-2xl border border-line bg-white p-3 md:h-72 md:w-72 lg:h-80 lg:w-80">
           {isLoading && !dataUrl ? (
             <p className="text-sm text-ink-muted">{t("common.loading")}</p>
           ) : dataUrl ? (
@@ -106,7 +110,7 @@ export function CustomerQrCard({
         </div>
 
         {qrToken ? (
-          <p className="text-center text-xs text-ink-muted">
+          <p className="text-center text-xs text-ink-muted md:text-sm">
             {qrToken.isExpired
               ? t("points.qrExpired")
               : t("points.qrExpiresAt", {

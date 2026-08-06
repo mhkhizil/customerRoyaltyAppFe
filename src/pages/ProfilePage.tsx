@@ -38,15 +38,18 @@ export function ProfilePage() {
   };
 
   return (
-    <section className="mx-auto max-w-lg space-y-5 pb-4">
+    <section className="w-full space-y-5 pb-4 md:space-y-6 md:pb-6">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight text-ink">
+        <h1 className="text-2xl font-bold tracking-tight text-ink md:text-3xl">
           {t("profile.title")}
         </h1>
-        <p className="mt-1 text-sm text-ink-muted">{t("profile.subtitle")}</p>
+        <p className="mt-1 text-sm text-ink-muted md:text-base">
+          {t("profile.subtitle")}
+        </p>
       </header>
 
-      <article className="rounded-2xl border border-line bg-surface p-4 sm:p-5">
+      <div className="grid gap-5 md:grid-cols-2 md:items-start md:gap-6">
+      <article className="rounded-2xl border border-line bg-surface p-4 sm:p-5 md:p-6">
         <dl className="space-y-3 text-sm">
           <div>
             <dt className="text-ink-muted">{t("profile.nickname")}</dt>
@@ -96,13 +99,15 @@ export function ProfilePage() {
         </div>
       </article>
 
-      <article className="rounded-2xl border border-line bg-surface p-4 sm:p-5">
-        <h2 className="text-base font-semibold text-ink">{t("profile.dobTitle")}</h2>
+      <article className="rounded-2xl border border-line bg-surface p-4 sm:p-5 md:p-6">
+        <h2 className="text-base font-semibold text-ink md:text-lg">
+          {t("profile.dobTitle")}
+        </h2>
         <p className="mt-1 text-sm text-ink-muted">{t("profile.dobHint")}</p>
         <form className="mt-4 space-y-3" onSubmit={handleSaveDob}>
           <input
             type="date"
-            className="min-h-11 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+            className="min-h-11 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 md:min-h-12"
             value={dateOfBirth}
             onChange={(event) => setDateOfBirth(event.target.value)}
             required
@@ -117,15 +122,20 @@ export function ProfilePage() {
               {success}
             </p>
           ) : null}
-          <Button type="submit" className="min-h-11" isLoading={isLoading}>
+          <Button
+            type="submit"
+            className="min-h-11 md:min-h-12"
+            isLoading={isLoading}
+          >
             {t("profile.saveDob")}
           </Button>
         </form>
       </article>
+      </div>
 
       <Button
         variant="secondary"
-        className="min-h-11 w-full"
+        className="min-h-11 w-full md:min-h-12 md:max-w-sm"
         onClick={() => {
           void logout().then(() => navigate("/login", { replace: true }));
         }}

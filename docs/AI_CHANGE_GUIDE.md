@@ -68,13 +68,14 @@ This web app will later be wrapped as a **mobile app** ([Median.io](https://medi
 
 **Layout rules**
 
-- Design **mobile-first**, then enhance with `sm:`, `md:`, `lg:` breakpoints.
+- Design **mobile-first**, then enhance for **tablets** (`md:` 768px+) and larger tablets (`lg:` / `xl:`).
+- Phone keeps a compact single column; tablets must use wider content (`max-w-3xl` → `max-w-6xl`), not a phone-width card.
 - Use fluid widths (`w-full`, `max-w-*`, `%`, `min-w-0`) — avoid fixed desktop-only widths.
 - Tables: wrap in `overflow-x-auto` or provide a stacked mobile layout.
-- Touch targets: minimum **44px** height for buttons and nav items on mobile.
+- Touch targets: minimum **44px** height for buttons and nav items (phones and tablets).
 - Avoid hover-only interactions; ensure tap-friendly controls.
-- Test mentally at **320px**, **390px**, and **768px** widths.
-- Shell: mobile-first with bottom nav (Home / Rewards / Profile); keep touch targets ≥ 44px.
+- Test mentally at **390px** (phone), **768px** (tablet), and **1024px** (large tablet).
+- Shell: bottom nav on all sizes; content width scales up from `md:`.
 
 **Do not**
 
