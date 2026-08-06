@@ -91,7 +91,8 @@ Customer Royalty App core flows:
 
 1. **Auth** — client register/login/OTP via `useAuth` (`/api/v1/client/auth/*`)
 2. **Points** — QR rotate + transactions via `useClientPoints` (`/api/v1/client/points/*`)
-3. **Users / Customers** — leftover architecture samples (`useUserManagement`, `useCustomerManagement`)
+3. **Campaigns** — discover sales / discount preview / redeem via `useClientCampaigns`
+4. **Users / Customers** — leftover architecture samples (`useUserManagement`, `useCustomerManagement`)
 
 The product UI is member-facing (Home / Rewards / Profile), not an admin dashboard.
 

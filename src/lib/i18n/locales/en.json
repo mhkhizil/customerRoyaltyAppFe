@@ -152,10 +152,28 @@
   },
   "rewards": {
     "title": "Rewards",
-    "subtitle": "Browse offers you can redeem with your points.",
-    "emptyTitle": "Rewards coming soon",
-    "emptyText": "Connect the rewards catalog API to show redeemable offers here.",
-    "backHome": "Back to home"
+    "subtitle": "Browse discover sales and preview the best discount for your purchase."
+  },
+  "campaigns": {
+    "discoverTitle": "Discover sales",
+    "discoverSubtitle": "Active promotions you can browse and redeem.",
+    "discoverEmpty": "No discover sales right now. Check back later.",
+    "previewTitle": "Discount preview",
+    "previewSubtitle": "See the best birthday, occasion, or discover discount for an amount.",
+    "purchaseAmount": "Purchase amount (MMK)",
+    "previewCta": "Preview discount",
+    "youSave": "You save {{amount}}",
+    "payable": "Payable {{amount}}",
+    "noPreviewDiscount": "No campaign qualifies for this amount right now.",
+    "previewNote": "Preview only — in-store QR scan applies the best discount automatically.",
+    "minPurchase": "Min. {{amount}}",
+    "validUntil": "Until {{date}}",
+    "redeemCta": "Redeem",
+    "redeemNote": "Manual redeem is optional. Staff QR scan usually applies the best campaign for you.",
+    "redeemSuccess": "Redeemed — you save {{amount}}",
+    "redemptionId": "Ref {{id}}",
+    "dobHint": "Add your date of birth so birthday discounts can apply.",
+    "setDob": "Set in Profile"
   },
   "profile": {
     "title": "Profile",

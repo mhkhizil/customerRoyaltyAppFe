@@ -7,14 +7,18 @@ import { ICustomerRepository } from "../../domain/repositories/ICustomerReposito
 import { ApiCustomerRepository } from "../repositories/ApiCustomerRepository";
 import { IPointsRepository } from "../../domain/repositories/IPointsRepository";
 import { ApiPointsRepository } from "../repositories/ApiPointsRepository";
+import { ICampaignRepository } from "../../domain/repositories/ICampaignRepository";
+import { ApiCampaignRepository } from "../repositories/ApiCampaignRepository";
 import { IAuthService } from "../../domain/services/IAuthService";
 import { AuthService } from "../../application/services/AuthService";
 import { UserManagementService } from "../../application/services/UserManagementService";
 import { CustomerManagementService } from "../../application/services/CustomerManagementService";
 import { PointsService } from "../../application/services/PointsService";
+import { CampaignService } from "../../application/services/CampaignService";
 import { ICustomerService } from "../../domain/services/ICustomerService";
 import { IUserService } from "../../domain/services/IUserService";
 import { IPointsService } from "../../domain/services/IPointsService";
+import { ICampaignService } from "../../domain/services/ICampaignService";
 
 /**
  * Dependency Injection Container
@@ -50,6 +54,11 @@ class Container {
       new ApiPointsRepository(this.resolve("httpClient"))
     );
 
+    this.register<ICampaignRepository>(
+      "campaignRepository",
+      new ApiCampaignRepository(this.resolve("httpClient"))
+    );
+
     this.register<IAuthService>(
       "authService",
       new AuthService(this.resolve("authRepository"))
@@ -68,6 +77,11 @@ class Container {
     this.register<IPointsService>(
       "pointsService",
       new PointsService(this.resolve("pointsRepository"))
+    );
+
+    this.register<ICampaignService>(
+      "campaignService",
+      new CampaignService(this.resolve("campaignRepository"))
     );
   }
 

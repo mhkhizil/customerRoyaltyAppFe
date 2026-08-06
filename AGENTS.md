@@ -63,6 +63,7 @@ Starter examples:
 
 - Auth (`useAuth`) — client register/login/OTP/profile
 - Points (`useClientPoints`) — QR rotate + point transactions
+- Campaigns (`useClientCampaigns`) — discover sales, discount preview, redeem
 - Home / Rewards / Profile — customer loyalty shell
 - Customer CRUD layers (`useCustomerManagement`) remain as an architecture sample only
 

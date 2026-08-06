@@ -29,6 +29,13 @@ export const API_ENDPOINTS = {
     TRANSACTIONS: "/api/v1/client/points/transactions",
   },
 
+  /** Authenticated client campaigns (Bearer required). */
+  CAMPAIGNS: {
+    DISCOVER_SALES: "/api/v1/client/campaigns/discover-sales",
+    DISCOUNT_PREVIEW: "/api/v1/client/campaigns/discount-preview",
+    REDEEM: "/api/v1/client/campaigns/redeem",
+  },
+
   USERS: {
     BASE: "/api/v1/users",
     CREATE: "/api/v1/users",
