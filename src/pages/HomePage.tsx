@@ -2,8 +2,10 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { CustomerQrCard } from "@/components/points/CustomerQrCard";
 import { PointsTransactionList } from "@/components/points/PointsTransactionList";
+import { ActiveCampaignClaimBanner } from "@/components/campaigns/ActiveCampaignClaimBanner";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/core/presentation/hooks/useAuth";
+import { useClientCampaigns } from "@/core/presentation/hooks/useClientCampaigns";
 import { useClientPoints } from "@/core/presentation/hooks/useClientPoints";
 
 export function HomePage() {
@@ -20,6 +22,10 @@ export function HomePage() {
     refresh,
     clearError,
   } = useClientPoints();
+  const { pendingClaims, isPollingClaim } = useClientCampaigns({
+    autoLoadDiscover: false,
+  });
+  const primaryPendingClaim = pendingClaims[0] ?? null;
 
   const displayName = user?.nickname || t("shell.userFallback");
   const phoneVerified = Boolean(user?.isPhoneVerified);
@@ -38,6 +44,14 @@ export function HomePage() {
           {t("home.subtitle")}
         </p>
       </header>
+
+      {primaryPendingClaim ? (
+        <ActiveCampaignClaimBanner
+          claim={primaryPendingClaim}
+          variant="compact"
+          isPolling={isPollingClaim}
+        />
+      ) : null}
 
       {/* Phone: stacked. Tablet+: points + QR side by side for scan-friendly layout. */}
       <div className="grid gap-5 md:grid-cols-2 md:items-start md:gap-6">

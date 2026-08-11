@@ -1,20 +1,38 @@
-import { FormEvent, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import {
+  DiscoverSaleCard,
+  DiscoverSaleCardSkeleton,
+} from "@/components/campaigns/DiscoverSaleCard";
+import { ActiveCampaignClaimBanner } from "@/components/campaigns/ActiveCampaignClaimBanner";
+import {
+  CampaignClaimCard,
+  CampaignClaimCardSkeleton,
+} from "@/components/campaigns/CampaignClaimCard";
+import { CampaignEligibilityPanel } from "@/components/campaigns/CampaignEligibilityPanel";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/core/presentation/hooks/useAuth";
 import { useClientCampaigns } from "@/core/presentation/hooks/useClientCampaigns";
-import { formatCampaignDiscount, formatMmk } from "@/lib/formatCurrency";
+import { formatMmk } from "@/lib/formatCurrency";
 import type { Campaign } from "@/core/domain/entities/Campaign";
 
-function formatCampaignDate(value: string, locale: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString(locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+type RewardsTab = "discover" | "promos";
+
+function sortByEndingSoon(a: Campaign, b: Campaign): number {
+  const aEnds = Date.parse(a.endsAt);
+  const bEnds = Date.parse(b.endsAt);
+  const aSafe = Number.isNaN(aEnds) ? Number.POSITIVE_INFINITY : aEnds;
+  const bSafe = Number.isNaN(bEnds) ? Number.POSITIVE_INFINITY : bEnds;
+  return aSafe - bSafe;
+}
+
+function sortClaimsByRecent<T extends { createdAt: string }>(a: T, b: T): number {
+  const aMs = Date.parse(a.createdAt);
+  const bMs = Date.parse(b.createdAt);
+  const aSafe = Number.isNaN(aMs) ? 0 : aMs;
+  const bSafe = Number.isNaN(bMs) ? 0 : bMs;
+  return bSafe - aSafe;
 }
 
 export function RewardsPage() {
@@ -22,25 +40,60 @@ export function RewardsPage() {
   const { user } = useAuth();
   const {
     discoverSales,
-    preview,
-    lastRedemption,
+    claims,
+    pendingClaims,
+    branches,
+    eligibilityPreview,
+    lastClaim,
     isLoadingDiscover,
-    isPreviewing,
+    isLoadingClaims,
+    isLoadingBranches,
+    isCheckingEligibility,
     isRedeeming,
+    isPollingClaim,
     error,
     loadDiscoverSales,
-    previewDiscount,
+    loadClaims,
+    previewEligibility,
     redeemCampaign,
+    refreshClaim,
     clearError,
+    clearEligibilityPreview,
   } = useClientCampaigns();
 
+  const [activeTab, setActiveTab] = useState<RewardsTab>("discover");
   const [purchaseAmountInput, setPurchaseAmountInput] = useState("50000");
-  const [redeemingCampaignId, setRedeemingCampaignId] = useState<string | null>(
+  const [selectedBranchId, setSelectedBranchId] = useState("");
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [eligibilityByCampaignId, setEligibilityByCampaignId] = useState<
+    Record<string, boolean>
+  >({});
+  const [claimingCampaignId, setClaimingCampaignId] = useState<string | null>(
     null
   );
-  const [redeemSuccess, setRedeemSuccess] = useState<string | null>(null);
+  const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
 
   const hasDob = Boolean(user?.dateOfBirth);
+  const primaryPendingClaim = pendingClaims[0] ?? null;
+
+  const sortedSales = useMemo(
+    () => [...discoverSales].sort(sortByEndingSoon),
+    [discoverSales]
+  );
+
+  const sortedClaims = useMemo(
+    () => [...claims].sort(sortClaimsByRecent),
+    [claims]
+  );
+
+  const pendingCampaignIds = useMemo(
+    () => new Set(pendingClaims.map((claim) => claim.campaignId)),
+    [pendingClaims]
+  );
+
+  const selectedCampaignIsClaimed = selectedCampaign
+    ? pendingCampaignIds.has(selectedCampaign.id)
+    : false;
 
   const parseAmount = (): number | null => {
     const amount = Number(purchaseAmountInput.replace(/,/g, "").trim());
@@ -48,64 +101,135 @@ export function RewardsPage() {
     return amount;
   };
 
-  const handlePreview = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setRedeemSuccess(null);
-    clearError();
+  const handleSelectCampaign = (campaign: Campaign) => {
+    setSelectedCampaign(campaign);
+    clearEligibilityPreview();
+  };
+
+  const handlePurchaseAmountChange = (value: string) => {
+    setPurchaseAmountInput(value);
+    clearEligibilityPreview();
+  };
+
+  const handleBranchChange = (branchId: string) => {
+    setSelectedBranchId(branchId);
+    clearEligibilityPreview();
+  };
+
+  const handleCheckEligibility = async () => {
+    if (!selectedCampaign) return;
 
     const amount = parseAmount();
     if (amount === null) return;
 
+    clearError();
     try {
-      await previewDiscount(amount);
+      const result = await previewEligibility({
+        campaignId: selectedCampaign.id,
+        purchaseAmount: amount,
+        locationId: selectedBranchId || undefined,
+      });
+      setEligibilityByCampaignId((current) => ({
+        ...current,
+        [selectedCampaign.id]: result.eligible,
+      }));
     } catch {
       /* error stored in hook */
     }
   };
 
-  const handleRedeem = async (campaign: Campaign) => {
-    setRedeemSuccess(null);
+  const handleClaim = async (campaign: Campaign) => {
+    setClaimSuccess(null);
     clearError();
 
     const amount = parseAmount();
     if (amount === null) return;
 
-    setRedeemingCampaignId(campaign.id);
+    setClaimingCampaignId(campaign.id);
     try {
       const result = await redeemCampaign({
         campaignId: campaign.id,
         purchaseAmount: amount,
       });
-      setRedeemSuccess(
-        t("campaigns.redeemSuccess", {
+      setClaimSuccess(
+        t("campaigns.claimSuccess", {
           amount: formatMmk(result.discountAmount, i18n.language),
         })
       );
+      setActiveTab("promos");
+      setEligibilityByCampaignId((current) => ({
+        ...current,
+        [campaign.id]: true,
+      }));
     } catch {
       /* error stored in hook */
     } finally {
-      setRedeemingCampaignId(null);
+      setClaimingCampaignId(null);
     }
   };
 
   return (
-    <section className="w-full space-y-5 pb-4 md:space-y-6 md:pb-6">
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight text-ink md:text-3xl">
+    <section className="w-full space-y-6 pb-4 md:space-y-8 md:pb-6">
+      <header className="space-y-2">
+        <p className="text-sm font-medium text-brand md:text-base">
+          {t("campaigns.eyebrow")}
+        </p>
+        <h1 className="text-2xl font-bold tracking-tight text-ink md:text-4xl">
           {t("rewards.title")}
         </h1>
-        <p className="mt-1 text-sm text-ink-muted md:text-base">
+        <p className="max-w-2xl text-sm text-ink-muted md:text-base">
           {t("rewards.subtitle")}
         </p>
       </header>
 
+      <div className="flex gap-2 rounded-2xl border border-line bg-surface-muted p-1">
+        <button
+          type="button"
+          className={[
+            "min-h-11 flex-1 rounded-xl px-3 text-sm font-semibold transition-colors md:min-h-12 md:text-base",
+            activeTab === "discover"
+              ? "bg-surface text-brand shadow-sm"
+              : "text-ink-muted hover:text-ink",
+          ].join(" ")}
+          onClick={() => setActiveTab("discover")}
+        >
+          {t("campaigns.tabDiscover")}
+        </button>
+        <button
+          type="button"
+          className={[
+            "min-h-11 flex-1 rounded-xl px-3 text-sm font-semibold transition-colors md:min-h-12 md:text-base",
+            activeTab === "promos"
+              ? "bg-surface text-brand shadow-sm"
+              : "text-ink-muted hover:text-ink",
+          ].join(" ")}
+          onClick={() => setActiveTab("promos")}
+        >
+          {t("campaigns.tabPromos")}
+          {pendingClaims.length > 0 ? (
+            <span className="ml-2 rounded-full bg-brand px-2 py-0.5 text-xs text-white">
+              {pendingClaims.length}
+            </span>
+          ) : null}
+        </button>
+      </div>
+
       {!hasDob ? (
-        <p className="rounded-xl border border-line bg-surface-muted px-4 py-3 text-sm text-ink-muted md:text-base">
-          {t("campaigns.dobHint")}{" "}
-          <Link className="font-semibold text-brand" to="/profile">
-            {t("campaigns.setDob")}
+        <div className="flex flex-col gap-3 rounded-2xl border border-brand/25 bg-brand-soft px-4 py-4 sm:flex-row sm:items-center sm:justify-between md:px-5">
+          <p className="text-sm text-ink md:text-base">{t("campaigns.dobHint")}</p>
+          <Link to="/profile" className="shrink-0">
+            <Button variant="secondary" className="min-h-11 w-full sm:w-auto md:min-h-12">
+              {t("campaigns.setDob")}
+            </Button>
           </Link>
-        </p>
+        </div>
+      ) : null}
+
+      {primaryPendingClaim ? (
+        <ActiveCampaignClaimBanner
+          claim={primaryPendingClaim}
+          isPolling={isPollingClaim}
+        />
       ) : null}
 
       {error ? (
@@ -114,88 +238,24 @@ export function RewardsPage() {
         </p>
       ) : null}
 
-      {redeemSuccess ? (
+      {claimSuccess && lastClaim ? (
         <p className="rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">
-          {redeemSuccess}
-          {lastRedemption ? (
-            <span className="mt-1 block text-xs opacity-80">
-              {t("campaigns.redemptionId", { id: lastRedemption.redemptionId })}
-            </span>
-          ) : null}
+          {claimSuccess}
+          <span className="mt-1 block text-xs opacity-80">
+            {t("campaigns.claimReadyRef", { id: lastClaim.redemptionId })}
+          </span>
         </p>
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-2 lg:items-start lg:gap-6">
-        {/* Discount preview — birthday / occasion / discover best match */}
-        <article className="rounded-2xl border border-line bg-surface p-4 sm:p-5 md:p-6">
-          <h2 className="text-lg font-semibold text-ink md:text-xl">
-            {t("campaigns.previewTitle")}
-          </h2>
-          <p className="mt-1 text-sm text-ink-muted md:text-base">
-            {t("campaigns.previewSubtitle")}
-          </p>
-
-          <form className="mt-4 space-y-3" onSubmit={handlePreview}>
-            <label className="block text-sm font-medium text-ink">
-              {t("campaigns.purchaseAmount")}
-              <input
-                type="number"
-                min={0}
-                inputMode="numeric"
-                className="mt-1.5 min-h-11 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 md:min-h-12"
-                value={purchaseAmountInput}
-                onChange={(event) => setPurchaseAmountInput(event.target.value)}
-                required
-              />
-            </label>
-            <Button
-              type="submit"
-              className="min-h-11 w-full md:min-h-12"
-              isLoading={isPreviewing}
-            >
-              {t("campaigns.previewCta")}
-            </Button>
-          </form>
-
-          {preview ? (
-            <div className="mt-4 rounded-xl border border-line bg-surface-muted p-4">
-              {preview.hasDiscount ? (
-                <>
-                  <p className="text-sm font-semibold text-ink md:text-base">
-                    {preview.campaignName}
-                  </p>
-                  <p className="mt-2 text-2xl font-bold tracking-tight text-brand md:text-3xl">
-                    {t("campaigns.youSave", {
-                      amount: formatMmk(preview.discountAmount, i18n.language),
-                    })}
-                  </p>
-                  <p className="mt-1 text-sm text-ink-muted">
-                    {t("campaigns.payable", {
-                      amount: formatMmk(preview.payableAmount, i18n.language),
-                    })}
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-ink-muted">
-                  {t("campaigns.noPreviewDiscount")}
-                </p>
-              )}
-              <p className="mt-3 text-xs text-ink-muted">
-                {t("campaigns.previewNote")}
-              </p>
-            </div>
-          ) : null}
-        </article>
-
-        {/* Discover sales browse list */}
-        <article className="rounded-2xl border border-line bg-surface p-4 sm:p-5 md:p-6">
-          <div className="flex items-start justify-between gap-3">
+      {activeTab === "discover" ? (
+        <section className="space-y-4 md:space-y-5">
+          <div className="flex flex-wrap items-end justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="text-lg font-semibold text-ink md:text-xl">
+              <h2 className="text-xl font-semibold tracking-tight text-ink md:text-2xl">
                 {t("campaigns.discoverTitle")}
               </h2>
               <p className="mt-1 text-sm text-ink-muted md:text-base">
-                {t("campaigns.discoverSubtitle")}
+                {t("campaigns.discoverFlowHint")}
               </p>
             </div>
             <Button
@@ -215,72 +275,148 @@ export function RewardsPage() {
             </Button>
           </div>
 
-          {isLoadingDiscover && discoverSales.length === 0 ? (
-            <p className="mt-4 text-sm text-ink-muted">{t("common.loading")}</p>
+          {selectedCampaign ? (
+            <CampaignEligibilityPanel
+              campaignName={selectedCampaign.name}
+              purchaseAmount={purchaseAmountInput}
+              onPurchaseAmountChange={handlePurchaseAmountChange}
+              branches={branches}
+              selectedBranchId={selectedBranchId}
+              onBranchChange={handleBranchChange}
+              isLoadingBranches={isLoadingBranches}
+              isChecking={isCheckingEligibility}
+              isClaiming={isRedeeming && claimingCampaignId === selectedCampaign.id}
+              isClaimed={selectedCampaignIsClaimed}
+              preview={
+                eligibilityPreview?.campaignId === selectedCampaign.id
+                  ? eligibilityPreview
+                  : null
+              }
+              onCheck={handleCheckEligibility}
+              onReset={clearEligibilityPreview}
+              onClaim={() => {
+                void handleClaim(selectedCampaign);
+              }}
+            />
+          ) : (
+            <div className="rounded-2xl border border-dashed border-line bg-surface-muted px-4 py-5 text-sm text-ink-muted md:px-5">
+              {t("campaigns.selectPromoHint")}
+            </div>
+          )}
+
+          {isLoadingDiscover && sortedSales.length === 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <DiscoverSaleCardSkeleton />
+              <DiscoverSaleCardSkeleton />
+              <DiscoverSaleCardSkeleton />
+            </div>
           ) : null}
 
-          {!isLoadingDiscover && discoverSales.length === 0 ? (
-            <p className="mt-4 rounded-xl border border-dashed border-line bg-surface-muted px-4 py-6 text-center text-sm text-ink-muted">
-              {t("campaigns.discoverEmpty")}
-            </p>
+          {!isLoadingDiscover && sortedSales.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-line bg-surface-muted px-6 py-12 text-center md:py-16">
+              <p className="text-base font-semibold text-ink md:text-lg">
+                {t("campaigns.discoverEmptyTitle")}
+              </p>
+              <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted md:text-base">
+                {t("campaigns.discoverEmpty")}
+              </p>
+            </div>
           ) : null}
 
-          {discoverSales.length > 0 ? (
-            <ul className="mt-4 divide-y divide-line">
-              {discoverSales.map((campaign) => (
-                <li key={campaign.id} className="py-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-ink">{campaign.name}</p>
-                      <p className="mt-1 text-sm font-medium text-brand">
-                        {formatCampaignDiscount(
-                          campaign.discountType,
-                          campaign.discountValue,
-                          i18n.language
-                        )}
-                      </p>
-                      <p className="mt-1 text-xs text-ink-muted">
-                        {t("campaigns.minPurchase", {
-                          amount: formatMmk(
-                            campaign.minimumPurchase,
-                            i18n.language
-                          ),
-                        })}
-                      </p>
-                      <p className="mt-0.5 text-xs text-ink-muted">
-                        {t("campaigns.validUntil", {
-                          date: formatCampaignDate(
-                            campaign.endsAt,
-                            i18n.language
-                          ),
-                        })}
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="min-h-11 shrink-0 md:min-h-12"
-                      isLoading={
-                        isRedeeming && redeemingCampaignId === campaign.id
-                      }
-                      onClick={() => {
-                        void handleRedeem(campaign);
-                      }}
-                    >
-                      {t("campaigns.redeemCta")}
-                    </Button>
-                  </div>
-                </li>
+          {sortedSales.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {sortedSales.map((campaign) => (
+                <DiscoverSaleCard
+                  key={campaign.id}
+                  campaign={campaign}
+                  isClaimed={pendingCampaignIds.has(campaign.id)}
+                  isSelected={selectedCampaign?.id === campaign.id}
+                  isEligible={eligibilityByCampaignId[campaign.id] ?? null}
+                  onSelect={handleSelectCampaign}
+                />
               ))}
-            </ul>
+            </div>
           ) : null}
 
-          <p className="mt-4 text-xs text-ink-muted">
-            {t("campaigns.redeemNote")}
+          <p className="text-xs text-ink-muted md:text-sm">
+            {t("campaigns.claimNote")}
           </p>
-        </article>
-      </div>
+        </section>
+      ) : (
+        <section className="space-y-4 md:space-y-5">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-xl font-semibold tracking-tight text-ink md:text-2xl">
+                {t("campaigns.promosTitle")}
+              </h2>
+              <p className="mt-1 text-sm text-ink-muted md:text-base">
+                {t("campaigns.promosSubtitle")}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="min-h-11 shrink-0 md:min-h-12"
+              isLoading={isLoadingClaims}
+              onClick={() => {
+                clearError();
+                void loadClaims().catch(() => {
+                  /* error stored */
+                });
+              }}
+            >
+              {t("common.refresh")}
+            </Button>
+          </div>
+
+          {isLoadingClaims && sortedClaims.length === 0 ? (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <CampaignClaimCardSkeleton />
+              <CampaignClaimCardSkeleton />
+            </div>
+          ) : null}
+
+          {!isLoadingClaims && sortedClaims.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-line bg-surface-muted px-6 py-12 text-center md:py-16">
+              <p className="text-base font-semibold text-ink md:text-lg">
+                {t("campaigns.promosEmptyTitle")}
+              </p>
+              <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted md:text-base">
+                {t("campaigns.promosEmpty")}
+              </p>
+              <Button
+                type="button"
+                className="mt-5 min-h-11 md:min-h-12"
+                onClick={() => setActiveTab("discover")}
+              >
+                {t("campaigns.promosBrowseCta")}
+              </Button>
+            </div>
+          ) : null}
+
+          {sortedClaims.length > 0 ? (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {sortedClaims.map((claim) => (
+                <CampaignClaimCard
+                  key={claim.redemptionId}
+                  claim={claim}
+                  isPolling={claim.isPending && isPollingClaim}
+                  onRefresh={
+                    claim.isPending
+                      ? () => {
+                          void refreshClaim(claim.redemptionId).catch(() => {
+                            /* error stored */
+                          });
+                        }
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+          ) : null}
+        </section>
+      )}
     </section>
   );
 }

@@ -33,7 +33,12 @@ export const API_ENDPOINTS = {
   CAMPAIGNS: {
     DISCOVER_SALES: "/api/v1/client/campaigns/discover-sales",
     DISCOUNT_PREVIEW: "/api/v1/client/campaigns/discount-preview",
+    ELIGIBILITY_PREVIEW: "/api/v1/client/campaigns/eligibility-preview",
     REDEEM: "/api/v1/client/campaigns/redeem",
+    CLAIMS: "/api/v1/client/campaigns/claims",
+    CLAIM_BY_ID: (redemptionId: string) =>
+      `/api/v1/client/campaigns/claims/${encodeURIComponent(redemptionId)}`,
+    BRANCHES: "/api/v1/client/campaigns/branches",
   },
 
   USERS: {
