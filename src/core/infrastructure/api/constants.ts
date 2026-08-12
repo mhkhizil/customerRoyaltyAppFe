@@ -41,6 +41,15 @@ export const API_ENDPOINTS = {
     BRANCHES: "/api/v1/client/campaigns/branches",
   },
 
+  /** Authenticated client point rewards (Bearer required). */
+  REWARDS: {
+    LIST: "/api/v1/client/rewards",
+    REDEEM: "/api/v1/client/rewards/redeem",
+    REDEMPTIONS: "/api/v1/client/rewards/redemptions",
+    REDEMPTION_BY_ID: (redemptionId: string) =>
+      `/api/v1/client/rewards/redemptions/${encodeURIComponent(redemptionId)}`,
+  },
+
   USERS: {
     BASE: "/api/v1/users",
     CREATE: "/api/v1/users",

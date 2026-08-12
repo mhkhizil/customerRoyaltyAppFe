@@ -41,7 +41,7 @@ export function PointsTransactionList({
   const { t, i18n } = useTranslation();
 
   return (
-    <article className="rounded-2xl border border-line bg-surface p-4 sm:p-5 md:p-6">
+    <article className="min-w-0 rounded-2xl border border-line bg-surface p-4 sm:p-5 md:p-6">
       <h2 className="text-lg font-semibold text-ink md:text-xl">
         {t("points.transactionsTitle")}
       </h2>
@@ -66,12 +66,15 @@ export function PointsTransactionList({
             const pointsLabel = tx.points > 0 ? `+${tx.points}` : String(tx.points);
 
             return (
-              <li key={tx.id} className="flex items-start justify-between gap-3 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-ink">
+              <li
+                key={tx.id}
+                className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-ink sm:truncate">
                     {tx.type || t("points.unknownType")}
                   </p>
-                  <p className="mt-0.5 truncate text-xs text-ink-muted">
+                  <p className="mt-0.5 break-words text-xs text-ink-muted sm:truncate">
                     {[tx.source, description].filter(Boolean).join(" · ") ||
                       formatWhen(tx.createdAt, i18n.language)}
                   </p>
@@ -79,7 +82,7 @@ export function PointsTransactionList({
                     {formatWhen(tx.createdAt, i18n.language)}
                   </p>
                 </div>
-                <div className="shrink-0 text-right">
+                <div className="flex shrink-0 items-center justify-between gap-3 sm:block sm:text-right">
                   <p
                     className={[
                       "text-sm font-bold tabular-nums",
@@ -88,7 +91,7 @@ export function PointsTransactionList({
                   >
                     {pointsLabel}
                   </p>
-                  <p className="mt-0.5 text-xs text-ink-muted">
+                  <p className="text-xs text-ink-muted sm:mt-0.5">
                     {t("points.balanceAfter", { balance: tx.balanceAfter })}
                   </p>
                 </div>

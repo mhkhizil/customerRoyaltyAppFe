@@ -16,3 +16,8 @@ export function formatCampaignDiscount(
   }
   return `${formatMmk(discountValue, locale)} off`;
 }
+
+export function formatPoints(points: number, locale = "en"): string {
+  if (!Number.isFinite(points)) return "—";
+  return new Intl.NumberFormat(locale).format(points);
+}

@@ -11,13 +11,24 @@ import {
   CampaignClaimCardSkeleton,
 } from "@/components/campaigns/CampaignClaimCard";
 import { CampaignEligibilityPanel } from "@/components/campaigns/CampaignEligibilityPanel";
+import {
+  RewardCatalogCard,
+  RewardCatalogCardSkeleton,
+} from "@/components/rewards/RewardCatalogCard";
+import {
+  RewardRedemptionCard,
+  RewardRedemptionCardSkeleton,
+} from "@/components/rewards/RewardRedemptionCard";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/core/presentation/hooks/useAuth";
 import { useClientCampaigns } from "@/core/presentation/hooks/useClientCampaigns";
-import { formatMmk } from "@/lib/formatCurrency";
+import { useClientPoints } from "@/core/presentation/hooks/useClientPoints";
+import { useClientRewards } from "@/core/presentation/hooks/useClientRewards";
+import { formatMmk, formatPoints } from "@/lib/formatCurrency";
 import type { Campaign } from "@/core/domain/entities/Campaign";
+import type { Reward } from "@/core/domain/entities/Reward";
 
-type RewardsTab = "discover" | "promos";
+type RewardsTab = "discover" | "promos" | "catalog";
 
 function sortByEndingSoon(a: Campaign, b: Campaign): number {
   const aEnds = Date.parse(a.endsAt);
@@ -61,6 +72,25 @@ export function RewardsPage() {
     clearEligibilityPreview,
   } = useClientCampaigns();
 
+  const {
+    rewards,
+    redemptions,
+    pendingRedemptions,
+    lastRedemption,
+    isLoadingRewards,
+    isLoadingRedemptions,
+    isRedeeming: isRedeemingReward,
+    isPollingRedemption,
+    error: rewardsError,
+    loadRewards,
+    loadRedemptions,
+    redeemReward,
+    refreshRedemption,
+    clearError: clearRewardsError,
+  } = useClientRewards();
+
+  const { balance, refresh: refreshPoints } = useClientPoints();
+
   const [activeTab, setActiveTab] = useState<RewardsTab>("discover");
   const [purchaseAmountInput, setPurchaseAmountInput] = useState("50000");
   const [selectedBranchId, setSelectedBranchId] = useState("");
@@ -72,6 +102,8 @@ export function RewardsPage() {
     null
   );
   const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
+  const [rewardSuccess, setRewardSuccess] = useState<string | null>(null);
+  const [redeemingRewardId, setRedeemingRewardId] = useState<string | null>(null);
 
   const hasDob = Boolean(user?.dateOfBirth);
   const primaryPendingClaim = pendingClaims[0] ?? null;
@@ -91,10 +123,41 @@ export function RewardsPage() {
     [pendingClaims]
   );
 
+  const sortedRedemptions = useMemo(
+    () => [...redemptions].sort(sortClaimsByRecent),
+    [redemptions]
+  );
+
+  const displayError =
+    activeTab === "catalog" ? rewardsError : error;
+
   const selectedCampaignIsClaimed = selectedCampaign
     ? pendingCampaignIds.has(selectedCampaign.id)
     : false;
 
+  const handleRedeemReward = async (reward: Reward) => {
+    setRewardSuccess(null);
+    clearRewardsError();
+
+    setRedeemingRewardId(reward.id);
+    try {
+      const result = await redeemReward({ rewardId: reward.id });
+      setRewardSuccess(
+        result.isCompleted
+          ? t("rewardsCatalog.redeemSuccessInstant", { name: result.rewardName })
+          : t("rewardsCatalog.redeemSuccessPending", {
+              code: result.redemptionCode,
+            })
+      );
+      void refreshPoints().catch(() => {
+        /* balance refresh is best-effort */
+      });
+    } catch {
+      /* error stored in hook */
+    } finally {
+      setRedeemingRewardId(null);
+    }
+  };
   const parseAmount = (): number | null => {
     const amount = Number(purchaseAmountInput.replace(/,/g, "").trim());
     if (!Number.isFinite(amount) || amount < 0) return null;
@@ -212,6 +275,23 @@ export function RewardsPage() {
             </span>
           ) : null}
         </button>
+        <button
+          type="button"
+          className={[
+            "min-h-11 flex-1 rounded-xl px-3 text-sm font-semibold transition-colors md:min-h-12 md:text-base",
+            activeTab === "catalog"
+              ? "bg-surface text-brand shadow-sm"
+              : "text-ink-muted hover:text-ink",
+          ].join(" ")}
+          onClick={() => setActiveTab("catalog")}
+        >
+          {t("rewardsCatalog.tabTitle")}
+          {pendingRedemptions.length > 0 ? (
+            <span className="ml-2 rounded-full bg-brand px-2 py-0.5 text-xs text-white">
+              {pendingRedemptions.length}
+            </span>
+          ) : null}
+        </button>
       </div>
 
       {!hasDob ? (
@@ -225,25 +305,31 @@ export function RewardsPage() {
         </div>
       ) : null}
 
-      {primaryPendingClaim ? (
+      {primaryPendingClaim && activeTab !== "catalog" ? (
         <ActiveCampaignClaimBanner
           claim={primaryPendingClaim}
           isPolling={isPollingClaim}
         />
       ) : null}
 
-      {error ? (
+      {displayError ? (
         <p className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
-          {error}
+          {displayError}
         </p>
       ) : null}
 
-      {claimSuccess && lastClaim ? (
+      {claimSuccess && lastClaim && activeTab !== "catalog" ? (
         <p className="rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">
           {claimSuccess}
           <span className="mt-1 block text-xs opacity-80">
             {t("campaigns.claimReadyRef", { id: lastClaim.redemptionId })}
           </span>
+        </p>
+      ) : null}
+
+      {rewardSuccess && lastRedemption && activeTab === "catalog" ? (
+        <p className="rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">
+          {rewardSuccess}
         </p>
       ) : null}
 
@@ -342,7 +428,7 @@ export function RewardsPage() {
             {t("campaigns.claimNote")}
           </p>
         </section>
-      ) : (
+      ) : activeTab === "promos" ? (
         <section className="space-y-4 md:space-y-5">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div className="min-w-0">
@@ -415,6 +501,149 @@ export function RewardsPage() {
               ))}
             </div>
           ) : null}
+        </section>
+      ) : (
+        <section className="space-y-6 md:space-y-8">
+          <div className="rounded-3xl bg-brand p-5 text-white shadow-sm sm:p-6 md:p-8">
+            <p className="text-sm font-medium text-white/80 md:text-base">
+              {t("rewardsCatalog.balanceLabel")}
+            </p>
+            <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl">
+              {balance === null
+                ? t("home.pointsPlaceholder")
+                : formatPoints(balance, i18n.language)}
+            </p>
+            <p className="mt-2 text-sm text-white/80">
+              {t("rewardsCatalog.balanceHint")}
+            </p>
+          </div>
+
+          <div className="space-y-4 md:space-y-5">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-xl font-semibold tracking-tight text-ink md:text-2xl">
+                  {t("rewardsCatalog.title")}
+                </h2>
+                <p className="mt-1 text-sm text-ink-muted md:text-base">
+                  {t("rewardsCatalog.subtitle")}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="min-h-11 shrink-0 md:min-h-12"
+                isLoading={isLoadingRewards}
+                onClick={() => {
+                  clearRewardsError();
+                  void loadRewards().catch(() => {
+                    /* error stored */
+                  });
+                }}
+              >
+                {t("common.refresh")}
+              </Button>
+            </div>
+
+            {isLoadingRewards && rewards.length === 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <RewardCatalogCardSkeleton />
+                <RewardCatalogCardSkeleton />
+                <RewardCatalogCardSkeleton />
+              </div>
+            ) : null}
+
+            {!isLoadingRewards && rewards.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-line bg-surface-muted px-6 py-12 text-center md:py-16">
+                <p className="text-base font-semibold text-ink md:text-lg">
+                  {t("rewardsCatalog.emptyTitle")}
+                </p>
+                <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted md:text-base">
+                  {t("rewardsCatalog.empty")}
+                </p>
+              </div>
+            ) : null}
+
+            {rewards.length > 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {rewards.map((reward) => (
+                  <RewardCatalogCard
+                    key={reward.id}
+                    reward={reward}
+                    pointsBalance={balance}
+                    isRedeeming={isRedeemingReward && redeemingRewardId === reward.id}
+                    onRedeem={handleRedeemReward}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="space-y-4 md:space-y-5">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-xl font-semibold tracking-tight text-ink md:text-2xl">
+                  {t("rewardsCatalog.myRedemptionsTitle")}
+                </h2>
+                <p className="mt-1 text-sm text-ink-muted md:text-base">
+                  {t("rewardsCatalog.myRedemptionsSubtitle")}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="min-h-11 shrink-0 md:min-h-12"
+                isLoading={isLoadingRedemptions}
+                onClick={() => {
+                  clearRewardsError();
+                  void loadRedemptions().catch(() => {
+                    /* error stored */
+                  });
+                }}
+              >
+                {t("common.refresh")}
+              </Button>
+            </div>
+
+            {isLoadingRedemptions && sortedRedemptions.length === 0 ? (
+              <div className="grid gap-4 lg:grid-cols-2">
+                <RewardRedemptionCardSkeleton />
+                <RewardRedemptionCardSkeleton />
+              </div>
+            ) : null}
+
+            {!isLoadingRedemptions && sortedRedemptions.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-line bg-surface-muted px-6 py-10 text-center">
+                <p className="text-sm text-ink-muted md:text-base">
+                  {t("rewardsCatalog.noRedemptions")}
+                </p>
+              </div>
+            ) : null}
+
+            {sortedRedemptions.length > 0 ? (
+              <div className="grid gap-4 lg:grid-cols-2">
+                {sortedRedemptions.map((redemption) => (
+                  <RewardRedemptionCard
+                    key={redemption.redemptionId}
+                    redemption={redemption}
+                    isPolling={redemption.isPending && isPollingRedemption}
+                    onRefresh={
+                      redemption.isPending
+                        ? () => {
+                            void refreshRedemption(redemption.redemptionId).catch(
+                              () => {
+                                /* error stored */
+                              }
+                            );
+                          }
+                        : undefined
+                    }
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
         </section>
       )}
     </section>

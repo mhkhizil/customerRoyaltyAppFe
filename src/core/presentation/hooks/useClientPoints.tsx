@@ -13,6 +13,8 @@ import {
   markHomePointsInitialized,
   markRotateApiCalled,
   readStoredCustomerQr,
+  readCachedPointTransactions,
+  writeCachedPointTransactions,
   writeStoredCustomerQr,
 } from "@/lib/customerQrCache";
 
@@ -100,7 +102,9 @@ export function useClientPoints(): UseClientPointsReturn {
   const mountedRef = useRef(true);
 
   const [qrToken, setQrToken] = useState<PointQrToken | null>(sharedCachedQr);
-  const [transactions, setTransactions] = useState<PointTransaction[]>([]);
+  const [transactions, setTransactions] = useState<PointTransaction[]>(() =>
+    readCachedPointTransactions()
+  );
   const [isLoadingQr, setIsLoadingQr] = useState(false);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -152,6 +156,7 @@ export function useClientPoints(): UseClientPointsReturn {
       clearError();
       const items = await pointsServiceRef.current.getTransactions();
       if (mountedRef.current) {
+        writeCachedPointTransactions(items);
         setTransactions(items);
       }
       return items;
@@ -177,18 +182,18 @@ export function useClientPoints(): UseClientPointsReturn {
 
   useEffect(() => {
     mountedRef.current = true;
-    if (hasHomePointsInitialized()) return;
-    markHomePointsInitialized();
 
     const cached = readStoredCustomerQr();
     if (isCustomerQrUsable(cached)) {
       applyQrToken(cached);
-    } else {
+    } else if (!hasHomePointsInitialized()) {
+      markHomePointsInitialized();
       void rotateQrToken({ silent: false, force: false }).catch(() => {
         /* error stored */
       });
     }
 
+    // Re-fetch whenever the hook mounts (e.g. navigate back to Home).
     void loadTransactions().catch(() => {
       /* error stored */
     });

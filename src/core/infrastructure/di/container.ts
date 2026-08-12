@@ -9,16 +9,20 @@ import { IPointsRepository } from "../../domain/repositories/IPointsRepository";
 import { ApiPointsRepository } from "../repositories/ApiPointsRepository";
 import { ICampaignRepository } from "../../domain/repositories/ICampaignRepository";
 import { ApiCampaignRepository } from "../repositories/ApiCampaignRepository";
+import { IRewardsRepository } from "../../domain/repositories/IRewardsRepository";
+import { ApiRewardsRepository } from "../repositories/ApiRewardsRepository";
 import { IAuthService } from "../../domain/services/IAuthService";
 import { AuthService } from "../../application/services/AuthService";
 import { UserManagementService } from "../../application/services/UserManagementService";
 import { CustomerManagementService } from "../../application/services/CustomerManagementService";
 import { PointsService } from "../../application/services/PointsService";
 import { CampaignService } from "../../application/services/CampaignService";
+import { RewardsService } from "../../application/services/RewardsService";
 import { ICustomerService } from "../../domain/services/ICustomerService";
 import { IUserService } from "../../domain/services/IUserService";
 import { IPointsService } from "../../domain/services/IPointsService";
 import { ICampaignService } from "../../domain/services/ICampaignService";
+import { IRewardsService } from "../../domain/services/IRewardsService";
 
 /**
  * Dependency Injection Container
@@ -59,6 +63,11 @@ class Container {
       new ApiCampaignRepository(this.resolve("httpClient"))
     );
 
+    this.register<IRewardsRepository>(
+      "rewardsRepository",
+      new ApiRewardsRepository(this.resolve("httpClient"))
+    );
+
     this.register<IAuthService>(
       "authService",
       new AuthService(this.resolve("authRepository"))
@@ -82,6 +91,11 @@ class Container {
     this.register<ICampaignService>(
       "campaignService",
       new CampaignService(this.resolve("campaignRepository"))
+    );
+
+    this.register<IRewardsService>(
+      "rewardsService",
+      new RewardsService(this.resolve("rewardsRepository"))
     );
   }
 

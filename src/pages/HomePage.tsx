@@ -109,14 +109,16 @@ export function HomePage() {
         </p>
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start lg:gap-6">
-        <PointsTransactionList
-          transactions={transactions}
-          isLoading={isLoadingTransactions}
-        />
+      <div className="grid gap-5 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] md:items-start md:gap-6">
+        <div className="min-w-0">
+          <PointsTransactionList
+            transactions={transactions}
+            isLoading={isLoadingTransactions}
+          />
+        </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-          <article className="rounded-2xl border border-line bg-surface p-4 md:p-5">
+        <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-1">
+          <article className="min-w-0 rounded-2xl border border-line bg-surface p-4 md:p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
               {t("home.phoneStatus")}
             </p>
@@ -134,7 +136,7 @@ export function HomePage() {
             ) : null}
           </article>
 
-          <article className="rounded-2xl border border-line bg-surface p-4 md:p-5">
+          <article className="min-w-0 rounded-2xl border border-line bg-surface p-4 md:p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
               {t("home.emailStatus")}
             </p>

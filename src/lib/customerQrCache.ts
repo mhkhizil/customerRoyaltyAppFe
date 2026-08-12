@@ -1,4 +1,5 @@
 import { PointQrToken } from "@/core/domain/entities/PointQrToken";
+import type { PointTransaction } from "@/core/domain/entities/PointTransaction";
 
 const STORAGE_KEY = "wms_customer_qr";
 const AUTO_ROTATE_DONE_KEY = "wms_qr_auto_rotate_done";
@@ -14,6 +15,7 @@ type StoredCustomerQr = {
 
 let lastRotateApiAt = 0;
 let homePointsInitialized = false;
+let cachedPointTransactions: PointTransaction[] = [];
 
 /** Full reset — call on logout only. */
 export function resetCustomerQrSession(): void {
@@ -21,6 +23,17 @@ export function resetCustomerQrSession(): void {
   lastRotateApiAt = 0;
   sessionStorage.removeItem(AUTO_ROTATE_DONE_KEY);
   homePointsInitialized = false;
+  cachedPointTransactions = [];
+}
+
+export function readCachedPointTransactions(): PointTransaction[] {
+  return cachedPointTransactions;
+}
+
+export function writeCachedPointTransactions(
+  transactions: PointTransaction[]
+): void {
+  cachedPointTransactions = transactions;
 }
 
 export function hasHomePointsInitialized(): boolean {
